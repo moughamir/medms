@@ -70,11 +70,10 @@ check:
 docs:
 	cargo doc --no-deps --open
 
-# Install Windows cross-compilation dependencies (Debian/Ubuntu)
+# Install Windows cross-compilation dependencies (Arch Linux)
 setup-windows-cross:
 	@echo "Installing MinGW-w64 for Windows cross-compilation..."
-	sudo apt-get update
-	sudo apt-get install -y mingw-w64
+	sudo pacman -S mingw-w64-gcc
 	rustup target add x86_64-pc-windows-gnu
 	@echo "Done! You can now run 'make build-windows'"
 
