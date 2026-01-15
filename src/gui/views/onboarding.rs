@@ -72,7 +72,6 @@ impl OnboardingView {
         ui.add_space(50.0);
         
         // Logo
-        // Logo
         ui.add(egui::Image::new(egui::include_image!("../../../assets/images/logo.png")).max_width(200.0));
         ui.add_space(20.0);
         
