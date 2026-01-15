@@ -25,10 +25,6 @@ pub struct MoroccanDocsApp {
     settings_view: SettingsView,
     /// Status message
     status_message: Option<(String, StatusType)>,
-    /// Config: commune name
-    commune: String,
-    /// Config: arrondissement name
-    arrondissement: String,
 }
 
 /// Type of status message
@@ -52,7 +48,8 @@ pub enum View {
 
 impl Default for MoroccanDocsApp {
     fn default() -> Self {
-        let database = ExcelDatabase::new("police_administrative.xlsx");
+        let settings_view = SettingsView::default();
+        let database = ExcelDatabase::new(&settings_view.database_path);
         let _ = database.initialize();
         let dashboard_stats = database.get_dashboard_stats().unwrap_or_default();
 
@@ -63,10 +60,8 @@ impl Default for MoroccanDocsApp {
             commerce_form: CommerceForm::default(),
             inspection_form: InspectionForm::default(),
             documents_view: DocumentsView::default(),
-            settings_view: SettingsView::default(),
+            settings_view,
             status_message: None,
-            commune: "جماعة ...".to_string(),
-            arrondissement: "مقاطعة ...".to_string(),
         }
     }
 }
@@ -80,16 +75,33 @@ impl MoroccanDocsApp {
     }
 
     /// Configures fonts for Arabic text rendering
+    /// Configures fonts for Arabic text rendering
     fn configure_fonts(ctx: &egui::Context) {
-        let fonts = egui::FontDefinitions::default();
+        let mut fonts = egui::FontDefinitions::default();
 
-        // Use system font that supports Arabic
-        // On most systems, the default proportional font should work
-        // For better Arabic support, we would add a custom Arabic font here
+        // Install Noto Sans Arabic
+        fonts.font_data.insert(
+            "NotoSansArabic".to_owned(),
+            egui::FontData::from_static(include_bytes!("../../assets/fonts/NotoSansArabic-Regular.ttf")),
+        );
+
+        // Put my font first (highest priority) for proportional text:
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "NotoSansArabic".to_owned());
+
+        // Put my font as last fallback for monospace:
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .push("NotoSansArabic".to_owned());
 
         ctx.set_fonts(fonts);
 
-        // Set RTL text direction for Arabic
+        // Set styling
         let mut style = (*ctx.style()).clone();
         style.spacing.item_spacing = egui::vec2(8.0, 8.0);
         ctx.set_style(style);
@@ -615,11 +627,11 @@ impl MoroccanDocsApp {
             .spacing([20.0, 10.0])
             .show(ui, |ui| {
                 ui.label("الجماعة:");
-                ui.text_edit_singleline(&mut self.commune);
+                ui.text_edit_singleline(&mut self.settings_view.commune);
                 ui.end_row();
 
                 ui.label("المقاطعة:");
-                ui.text_edit_singleline(&mut self.arrondissement);
+                ui.text_edit_singleline(&mut self.settings_view.arrondissement);
                 ui.end_row();
 
                 ui.label("ملف قاعدة البيانات:");

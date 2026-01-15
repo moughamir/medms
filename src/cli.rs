@@ -15,7 +15,7 @@ pub fn run_cli() -> Result<()> {
     println!("=== نظام إدارة الشرطة الإدارية الجماعية ===");
     println!("=== Municipal Administrative Police Management System ===\n");
 
-    let db = ExcelDatabase::new("police_administrative.xlsx");
+    let db = ExcelDatabase::new("store/police_administrative.xlsx");
     db.initialize()?;
 
     loop {
@@ -99,7 +99,9 @@ pub fn run_cli() -> Result<()> {
             Some(inspection),
             Some(action),
         );
-        let output_filename = generator.generate_filename();
+        let output_dir = "store/documents";
+        std::fs::create_dir_all(output_dir)?;
+        let output_filename = format!("{}/{}", output_dir, generator.generate_filename());
         generator.create_document(&output_filename)?;
 
         println!(

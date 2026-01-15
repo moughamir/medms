@@ -1,7 +1,7 @@
 //! Settings view state
 
 /// State for the settings view
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SettingsView {
     /// Commune name
     pub commune: String,
@@ -67,9 +67,15 @@ impl SettingsView {
             commune: "جماعة ...".to_string(),
             arrondissement: "مقاطعة ...".to_string(),
             service: "الشرطة الإدارية".to_string(),
-            database_path: "police_administrative.xlsx".to_string(),
-            output_directory: "./documents".to_string(),
+            database_path: "store/police_administrative.xlsx".to_string(),
+            output_directory: "store/documents".to_string(),
             ..Default::default()
         }
+    }
+}
+
+impl Default for SettingsView {
+    fn default() -> Self {
+        Self::new()
     }
 }
