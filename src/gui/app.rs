@@ -3,7 +3,9 @@
 use crate::database::ExcelDatabase;
 use crate::gui::localization::tr;
 use crate::gui::text_utils::reshape;
-use crate::gui::views::{CommerceForm, DocumentsView, InspectionForm, SettingsView};
+use crate::gui::views::{
+    CommerceForm, DocumentsView, InspectionForm, OnboardingView, SettingsView,
+};
 use crate::models::{
     CommerceInfo, DashboardStats, DocumentType, InspectionRecord, ViolationType,
 };
@@ -25,6 +27,8 @@ pub struct MoroccanDocsApp {
     documents_view: DocumentsView,
     /// Settings view state
     settings_view: SettingsView,
+    /// Onboarding view state
+    onboarding_view: OnboardingView,
     /// Status message
     status_message: Option<(String, StatusType)>,
     /// Authentication state
@@ -67,6 +71,7 @@ impl Default for MoroccanDocsApp {
             inspection_form: InspectionForm::default(),
             documents_view: DocumentsView::default(),
             settings_view,
+            onboarding_view: OnboardingView::default(),
             status_message: None,
             is_authenticated: false,
             login_password: String::new(),
@@ -79,6 +84,8 @@ impl MoroccanDocsApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // Configure fonts for Arabic support
         Self::configure_fonts(&cc.egui_ctx);
+        // Install image loaders
+        egui_extras::install_image_loaders(&cc.egui_ctx);
         Self::default()
     }
 
@@ -689,7 +696,9 @@ impl MoroccanDocsApp {
 
 impl eframe::App for MoroccanDocsApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if !self.is_authenticated {
+        if !self.settings_view.is_onboarded {
+            self.onboarding_view.update(ctx, &mut self.settings_view);
+        } else if !self.is_authenticated {
             self.render_login(ctx);
         } else {
             self.render_sidebar(ctx);

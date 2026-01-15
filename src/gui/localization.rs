@@ -89,6 +89,14 @@ fn get_dictionary() -> &'static HashMap<&'static str, Translation> {
         m.insert("db_file", Translation::new("ملف قاعدة البيانات", "Fichier de base de données"));
         m.insert("settings_saved", Translation::new("تم حفظ الإعدادات", "Paramètres enregistrés"));
 
+        // Onboarding
+        m.insert("back", Translation::new("السابق", "Retour"));
+        m.insert("next", Translation::new("التالي", "Suivant"));
+        m.insert("finish", Translation::new("إنهاء", "Terminer"));
+        m.insert("location_settings", Translation::new("إعدادات الموقع", "Paramètres de localisation"));
+        m.insert("identity_settings", Translation::new("بيانات العون", "Informations de l'agent"));
+        m.insert("database_settings", Translation::new("قاعدة البيانات", "Base de données"));
+        
         m
     })
 }

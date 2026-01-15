@@ -21,6 +21,8 @@ pub struct SettingsView {
     pub language: Language,
     /// Theme preference
     pub theme: Theme,
+    /// Onboarding status
+    pub is_onboarded: bool,
 }
 
 /// Language options
@@ -79,6 +81,7 @@ impl Default for SettingsView {
             output_directory: "store/documents".to_string(),
             language: Language::ArabicFrench,
             theme: Theme::Dark,
+            is_onboarded: false,
         }
     }
 }

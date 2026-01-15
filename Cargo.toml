@@ -33,6 +33,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 arabic_reshaper = "0.4.2"
 unicode-bidi = "0.3.18"
+open = "5.3.3"
+image = "0.25.9"
 
 [profile.release]
 opt-level = 3
