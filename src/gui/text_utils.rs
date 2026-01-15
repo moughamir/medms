@@ -1,5 +1,5 @@
 use arabic_reshaper::ArabicReshaper;
-// use unicode_bidi::BidiInfo;
+use unicode_bidi::BidiInfo;
 
 /// Reshapes Arabic text to have correct letter forms (Initial, Medial, Final).
 /// Also handles BiDi reordering for proper display in environments that don't support it natively.
@@ -11,27 +11,16 @@ pub fn reshape(text: &str) -> String {
     let reshaper = ArabicReshaper::default();
     let reshaped_text = reshaper.reshape(text);
 
-    // If the text contains Arabic, we might need to reorder it for display
-    // if the underlying renderer doesn't handle BiDi.
-    // egui generally expects logical text, but for "reshaped" text (which effectively becomes visual glyphs for legacy support),
-    // we often need to reverse it or apply bidi explicitly if we are "drawing" it as glyphs.
-    // However, arabic_reshaper returns logical characters in proper forms.
-    // Let's try just reshaping first. The most common issue is isolated characters.
+    // Apply BiDi reordering to get visual order
+    let bidi_info = BidiInfo::new(&reshaped_text, Some(unicode_bidi::Level::rtl()));
     
-    // Check if we need to apply Bidi
-    // For now, let's just return reshaped text. 
-    // If direction is still wrong, we will apply bidi reordering.
-    
-    // UPDATE: Users usually need Bidi processing for Arabic in simple renderers.
-    // Let's apply simple Bidi processing.
-    
-    // If the whole text is RTL, we might just need to reverse the characters for some engines?
-    // But let's actally use reorder_line if we want visual order.
-    // egui typically handles direction if given logical text, but we are modifying the text 
-    // to be "presentation forms".
-    // 
-    // Experiment: Just return reshaped text first. If that fails (letters connected but wrong order),
-    // we will add Bidi reordering.
-    
-    reshaped_text
+    // We want to reorder the whole line to visual order
+    if !bidi_info.paragraphs.is_empty() {
+        let para = &bidi_info.paragraphs[0];
+        let line = para.range.clone();
+        let display = bidi_info.reorder_line(para, line);
+        display.to_string()
+    } else {
+        reshaped_text
+    }
 }
