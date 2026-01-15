@@ -1,7 +1,7 @@
 //! Database queries for statistics and reporting
 
 use crate::database::ExcelDatabase;
-use crate::models::{DashboardStats, SummaryCard};
+use crate::models::{DashboardStats, statistics::SummaryCard};
 use anyhow::Result;
 use std::collections::HashMap;
 
