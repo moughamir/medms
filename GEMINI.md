@@ -1,4 +1,4 @@
-# Project: Moroccan Administrative Documents Generator
+# Moroccan Administrative Documents Generator
 
 ## Project Overview
 

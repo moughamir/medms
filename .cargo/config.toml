@@ -1,0 +1,27 @@
+# Cargo configuration for cross-compilation
+
+# Windows GNU target (using MinGW-w64)
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+
+# Windows MSVC target (for CI/CD or native Windows builds)
+# [target.x86_64-pc-windows-msvc]
+# Requires MSVC toolchain or cross-rs
+
+# Build settings
+[build]
+# Uncomment to set a default target
+# target = "x86_64-unknown-linux-gnu"
+
+# Profile optimizations
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
