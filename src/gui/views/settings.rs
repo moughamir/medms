@@ -63,19 +63,22 @@ impl Theme {
 
 impl SettingsView {
     pub fn new() -> Self {
-        Self {
-            commune: "جماعة ...".to_string(),
-            arrondissement: "مقاطعة ...".to_string(),
-            service: "الشرطة الإدارية".to_string(),
-            database_path: "store/police_administrative.xlsx".to_string(),
-            output_directory: "store/documents".to_string(),
-            ..Default::default()
-        }
+        Self::default()
     }
 }
 
 impl Default for SettingsView {
     fn default() -> Self {
-        Self::new()
+        Self {
+            commune: "جماعة ...".to_string(),
+            arrondissement: "مقاطعة ...".to_string(),
+            service: "الشرطة الإدارية".to_string(),
+            default_inspector_name: String::new(),
+            default_inspector_grade: String::new(),
+            database_path: "store/police_administrative.xlsx".to_string(),
+            output_directory: "store/documents".to_string(),
+            language: Language::ArabicFrench,
+            theme: Theme::Dark,
+        }
     }
 }
