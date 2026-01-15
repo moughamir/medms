@@ -218,7 +218,7 @@ impl ExcelDatabase {
         ];
 
         for (i, header) in headers.iter().enumerate() {
-            worksheet.write_string_with_format(0, i as u16, header, &header_format)?;
+            worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
         Ok(())
@@ -238,7 +238,7 @@ impl ExcelDatabase {
         ];
 
         for (i, header) in headers.iter().enumerate() {
-            worksheet.write_string_with_format(0, i as u16, header, &header_format)?;
+            worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
         Ok(())
@@ -257,7 +257,7 @@ impl ExcelDatabase {
         ];
 
         for (i, header) in headers.iter().enumerate() {
-            worksheet.write_string_with_format(0, i as u16, header, &header_format)?;
+            worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
         Ok(())
@@ -276,7 +276,7 @@ impl ExcelDatabase {
         ];
 
         for (i, header) in headers.iter().enumerate() {
-            worksheet.write_string_with_format(0, i as u16, header, &header_format)?;
+            worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
         Ok(())
@@ -341,7 +341,7 @@ impl ExcelDatabase {
         ];
 
         for (i, header) in headers.iter().enumerate() {
-            worksheet.write_string_with_format(0, i as u16, header, &header_format)?;
+            worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
         for (i, row) in existing_data.iter().enumerate() {
