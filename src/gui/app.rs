@@ -25,6 +25,8 @@ pub struct MoroccanDocsApp {
     inspection_form: InspectionForm,
     /// Documents view state
     documents_view: DocumentsView,
+    /// Document form state
+    document_form: crate::gui::views::documents::DocumentForm,
     /// Settings view state
     settings_view: SettingsView,
     /// Onboarding view state
@@ -70,6 +72,7 @@ impl Default for MoroccanDocsApp {
             commerce_form: CommerceForm::default(),
             inspection_form: InspectionForm::default(),
             documents_view: DocumentsView::default(),
+            document_form: crate::gui::views::documents::DocumentForm::default(),
             settings_view,
             onboarding_view: OnboardingView::default(),
             status_message: None,
@@ -490,9 +493,28 @@ impl MoroccanDocsApp {
                     ui.text_edit_singleline(&mut self.inspection_form.inspector_grade);
                     ui.end_row();
 
-                    // Commerce selection (simplified - would need dropdown)
-                    ui.label(format!("{}:", tr("shop", &self.settings_view.language)));
-                    ui.text_edit_singleline(&mut self.inspection_form.commerce_name);
+                    // Commerce selection
+                    let commerces = self.database.get_all_commerces().unwrap_or_default();
+                    match self.inspection_form.commerce_selector.ui(
+                        ui,
+                        &commerces,
+                        &self.settings_view.language,
+                    ) {
+                        crate::gui::widgets::SelectorResult::Selected(selected) => {
+                            self.inspection_form.commerce_id = selected.commerce_id;
+                            self.inspection_form.commerce_name = selected.denomination;
+                        }
+                        crate::gui::widgets::SelectorResult::AddNew => {
+                            self.current_view = View::NewCommerce;
+                            self.clear_status();
+                        }
+                        crate::gui::widgets::SelectorResult::None => {}
+                    }
+                    
+                    // Show selected commerce name if any
+                    if !self.inspection_form.commerce_name.is_empty() {
+                        ui.label(format!("{} : {}", tr("shop", &self.settings_view.language), self.inspection_form.commerce_name));
+                    }
                     ui.end_row();
 
                     // Violation type
@@ -580,17 +602,124 @@ impl MoroccanDocsApp {
         ui.heading(tr("new_document", &self.settings_view.language));
         ui.separator();
 
-        ui.label(format!("{}:", tr("choose_type", &self.settings_view.language)));
-        ui.add_space(10.0);
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            egui::Grid::new("document_form_grid")
+                .num_columns(2)
+                .spacing([20.0, 10.0])
+                .show(ui, |ui| {
+                     // Type selector
+                    ui.label(format!("{}:", tr("type", &self.settings_view.language)));
+                    egui::ComboBox::from_id_salt("doc_type")
+                        .selected_text(self.document_form.doc_type.as_ref().map(|t| reshape(t.to_arabic())).unwrap_or_else(|| tr("select_type", &self.settings_view.language)))
+                        .show_ui(ui, |ui| {
+                            for t in DocumentType::all() {
+                                if ui.selectable_label(self.document_form.doc_type == Some(t.clone()), reshape(t.to_arabic())).clicked() {
+                                    self.document_form.doc_type = Some(t);
+                                }
+                            }
+                        });
+                    ui.end_row();
 
-        for doc_type in DocumentType::all() {
-            if ui.button(doc_type.to_string()).clicked() {
-                // Would open document creation wizard
-                self.set_status(
-                    format!("{} {}", tr("create", &self.settings_view.language), reshape(doc_type.to_arabic())),
-                    StatusType::Info,
-                );
+                     // Commerce Selector
+                    ui.label(format!("{}:", tr("shop", &self.settings_view.language)));
+                    let commerces = self.database.get_all_commerces().unwrap_or_default();
+                    match self.document_form.commerce_selector.ui(ui, &commerces, &self.settings_view.language) {
+                         crate::gui::widgets::SelectorResult::Selected(c) => {
+                             self.document_form.commerce_id = c.commerce_id;
+                             self.document_form.commerce_name = c.denomination;
+                         }
+                         crate::gui::widgets::SelectorResult::AddNew => {
+                              self.current_view = View::NewCommerce;
+                              self.clear_status();
+                         }
+                         _ => {}
+                    }
+                    ui.end_row();
+                });
+            
+            // Show selected commerce name
+            if !self.document_form.commerce_name.is_empty() {
+                ui.colored_label(egui::Color32::BLUE, format!("{} : {}", tr("shop", &self.settings_view.language), self.document_form.commerce_name));
             }
+            ui.add_space(10.0);
+            
+            // Content
+            ui.label(format!("{}:", tr("content", &self.settings_view.language)));
+            ui.text_edit_multiline(&mut self.document_form.content);
+            ui.add_space(20.0);
+            
+            // Generate Button
+            ui.horizontal(|ui| {
+                if ui.button(format!("⚙ {}", tr("create", &self.settings_view.language))).clicked() {
+                    self.generate_document();
+                }
+                if ui.button(format!("🗑 {}", tr("clear", &self.settings_view.language))).clicked() {
+                    self.document_form = crate::gui::views::documents::DocumentForm::default();
+                }
+            });
+        });
+    }
+
+    /// Generates the document based on the form
+    fn generate_document(&mut self) {
+        if self.document_form.doc_type.is_none() {
+             self.set_status("المرجو اختيار نوع الوثيقة".to_string(), StatusType::Error); // TODO: Localize error
+             return;
+        }
+
+        // 1. Get next doc number
+        let doc_number = match self.database.get_next_doc_number() {
+            Ok(n) => n,
+            Err(e) => {
+                self.set_status(format!("Error getting doc number: {}", e), StatusType::Error);
+                return;
+            }
+        };
+        
+        // 2. Create metadata
+        let doc_type = self.document_form.doc_type.clone().unwrap();
+        let mut metadata = crate::models::DocumentMetadata::new(doc_type, doc_number);
+        metadata.commerce_id = self.document_form.commerce_id.clone();
+        metadata.content = self.document_form.content.clone();
+        // Inspector defaults (should be from settings or login context, using dummy for now if empty)
+        metadata.inspector_name = "مفتش الشرطة الإدارية".to_string(); 
+        metadata.inspector_grade = "محرر".to_string();
+        
+        metadata.commune = self.settings_view.commune.clone();
+        metadata.arrondissement = self.settings_view.arrondissement.clone();
+
+        // 3. Generators
+        let commerce = if !metadata.commerce_id.is_empty() {
+             self.database.get_commerce_by_id(&metadata.commerce_id).unwrap_or(None)
+        } else {
+            None
+        };
+        
+        let generator = crate::generator::docx::DocumentGenerator::new(metadata.clone(), commerce, None, None);
+        
+        // 4. Save file
+        let filename = generator.generate_filename();
+        let docs_dir = std::path::Path::new("docs");
+        if !docs_dir.exists() {
+             if let Err(e) = std::fs::create_dir(docs_dir) {
+                 self.set_status(format!("Failed to create docs dir: {}", e), StatusType::Error);
+                 return;
+             }
+        }
+        let output_path = docs_dir.join(&filename);
+        
+        match generator.create_document(output_path.to_str().unwrap_or("docs/output.docx")) {
+            Ok(_) => {
+                // 5. Save metadata to DB
+                if let Err(e) = self.database.save_metadata(&metadata) {
+                    self.set_status(format!("Saved file but failed to save DB: {}", e), StatusType::Error);
+                } else {
+                    self.set_status(format!("{} : {}", tr("doc_created", &self.settings_view.language), filename), StatusType::Success);
+                    self.document_form = crate::gui::views::documents::DocumentForm::default(); // Reset
+                    self.refresh_stats();
+                }
+            }
+            Err(e) => self.set_status(format!("Error creating document: {}", e), StatusType::Error),
         }
     }
 
@@ -614,12 +743,28 @@ impl MoroccanDocsApp {
         match self.database.get_recent_documents(50) {
             Ok(docs) => {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    if let Some(docs_dir) = std::fs::canonicalize("docs").ok() {
+                         if ui.button(format!("📂 {}", tr("open_folder", &self.settings_view.language))).clicked() {
+                             let _ = open::that(docs_dir);
+                         }
+                    }
+                    ui.separator();
+
                     for doc in docs {
                         ui.horizontal(|ui| {
                             ui.label(&doc.doc_number);
                             ui.label(reshape(doc.doc_type.to_arabic()));
                             ui.label(&doc.creation_date);
                             ui.label(&doc.inspector_name);
+                            
+                            // Open Button
+                            let filename = format!("{}_{}.docx", doc.doc_number.replace('/', "_"), doc.doc_type.to_arabic());
+                            let path = std::path::Path::new("docs").join(&filename);
+                            if path.exists() {
+                                if ui.button("📄").on_hover_text(tr("open", &self.settings_view.language)).clicked() {
+                                    let _ = open::that(path);
+                                }
+                            }
                         });
                         ui.separator();
                     }

@@ -19,6 +19,28 @@ pub struct DocumentsView {
     pub sort_order: SortOrder,
 }
 
+/// State for creating a new document
+#[derive(Debug, Clone)]
+pub struct DocumentForm {
+    pub doc_type: Option<DocumentType>,
+    pub commerce_selector: crate::gui::widgets::commerce_selector::CommerceSelector,
+    pub commerce_id: String,
+    pub commerce_name: String,
+    pub content: String,
+}
+
+impl Default for DocumentForm {
+    fn default() -> Self {
+        Self {
+            doc_type: None,
+            commerce_selector: crate::gui::widgets::CommerceSelector::default(),
+            commerce_id: String::new(),
+            commerce_name: String::new(),
+            content: String::new(),
+        }
+    }
+}
+
 /// Sort order for document list
 #[derive(Debug, Clone, Default, PartialEq)]
 pub enum SortOrder {

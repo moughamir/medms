@@ -72,7 +72,8 @@ impl OnboardingView {
         ui.add_space(50.0);
         
         // Logo
-        ui.image(egui::include_image!("../../../assets/images/logo.png"));
+        // Logo
+        ui.add(egui::Image::new(egui::include_image!("../../../assets/images/logo.png")).max_width(200.0));
         ui.add_space(20.0);
         
         ui.heading(reshape("مرحباً بكم في نظام الشرطة الإدارية"));

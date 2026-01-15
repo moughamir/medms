@@ -83,6 +83,12 @@ fn get_dictionary() -> &'static HashMap<&'static str, Translation> {
         m.insert("choose_type", Translation::new("اختر نوع الوثيقة", "Choisir le type de document"));
         m.insert("create", Translation::new("إنشاء", "Créer"));
         m.insert("loading_error", Translation::new("خطأ في تحميل الوثائق", "Erreur lors du chargement des documents"));
+        m.insert("type", Translation::new("النوع", "Type"));
+        m.insert("select_type", Translation::new("اختر النوع", "Sélectionner le type"));
+        m.insert("content", Translation::new("المحتوى / الملاحظات", "Contenu / Remarques"));
+        m.insert("doc_created", Translation::new("تم إنشاء الوثيقة", "Document créé"));
+        m.insert("open_folder", Translation::new("فتح المجلد", "Ouvrir le dossier"));
+        m.insert("open", Translation::new("فتح", "Ouvrir"));
 
         m.insert("commune", Translation::new("الجماعة", "Commune"));
         m.insert("arrondissement", Translation::new("المقاطعة", "Arrondissement"));
