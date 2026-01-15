@@ -1,14 +1,12 @@
 //! Excel database operations with proper data preservation
 
 use crate::models::{
-    ActionStatus, CommerceInfo, DashboardStats, DocumentMetadata, DocumentType,
-    EnforcementAction, InspectionRecord, ViolationType,
+    CommerceInfo, DocumentMetadata, DocumentType, EnforcementAction, InspectionRecord,
 };
 use anyhow::{Context, Result};
-use calamine::{open_workbook, DataType, Reader, Xlsx};
+use calamine::{open_workbook, Reader, Xlsx};
 use chrono::{Datelike, Local};
 use rust_xlsxwriter::{Color, Format, Workbook, Worksheet};
-use std::collections::HashMap;
 use std::path::Path;
 
 /// Sheet names (Arabic - English)
@@ -41,10 +39,17 @@ impl ExcelDatabase {
         if !Path::new(&self.file_path).exists() {
             let mut workbook = Workbook::new();
 
-            self.create_documents_sheet(&mut workbook)?;
-            self.create_commerce_sheet(&mut workbook)?;
-            self.create_inspections_sheet(&mut workbook)?;
-            self.create_actions_sheet(&mut workbook)?;
+            let docs_sheet = workbook.add_worksheet();
+            Self::create_documents_sheet(docs_sheet)?;
+            
+            let commerce_sheet = workbook.add_worksheet();
+            Self::create_commerce_sheet(commerce_sheet)?;
+            
+            let inspections_sheet = workbook.add_worksheet();
+            Self::create_inspections_sheet(inspections_sheet)?;
+            
+            let actions_sheet = workbook.add_worksheet();
+            Self::create_actions_sheet(actions_sheet)?;
 
             workbook
                 .save(&self.file_path)
@@ -55,8 +60,7 @@ impl ExcelDatabase {
 
     // ==================== Sheet Creation ====================
 
-    fn create_documents_sheet(&self, workbook: &mut Workbook) -> Result<&mut Worksheet> {
-        let worksheet = workbook.add_worksheet();
+    fn create_documents_sheet(worksheet: &mut Worksheet) -> Result<()> {
         worksheet.set_name(SHEET_DOCUMENTS)?;
 
         let header_format = Format::new()
@@ -83,11 +87,10 @@ impl ExcelDatabase {
             worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
-        Ok(worksheet)
+        Ok(())
     }
 
-    fn create_commerce_sheet(&self, workbook: &mut Workbook) -> Result<&mut Worksheet> {
-        let worksheet = workbook.add_worksheet();
+    fn create_commerce_sheet(worksheet: &mut Worksheet) -> Result<()> {
         worksheet.set_name(SHEET_COMMERCE)?;
 
         let header_format = Format::new()
@@ -115,11 +118,10 @@ impl ExcelDatabase {
             worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
-        Ok(worksheet)
+        Ok(())
     }
 
-    fn create_inspections_sheet(&self, workbook: &mut Workbook) -> Result<&mut Worksheet> {
-        let worksheet = workbook.add_worksheet();
+    fn create_inspections_sheet(worksheet: &mut Worksheet) -> Result<()> {
         worksheet.set_name(SHEET_INSPECTIONS)?;
 
         let header_format = Format::new()
@@ -143,11 +145,10 @@ impl ExcelDatabase {
             worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
-        Ok(worksheet)
+        Ok(())
     }
 
-    fn create_actions_sheet(&self, workbook: &mut Workbook) -> Result<&mut Worksheet> {
-        let worksheet = workbook.add_worksheet();
+    fn create_actions_sheet(worksheet: &mut Worksheet) -> Result<()> {
         worksheet.set_name(SHEET_ACTIONS)?;
 
         let header_format = Format::new()
@@ -171,7 +172,7 @@ impl ExcelDatabase {
             worksheet.write_string_with_format(0, i as u16, *header, &header_format)?;
         }
 
-        Ok(worksheet)
+        Ok(())
     }
 
     // ==================== Data Reading ====================
@@ -218,7 +219,7 @@ impl ExcelDatabase {
 
             for row in range.rows().skip(1) {
                 if let Some(cell) = row.get(1) {
-                    if let Some(doc_num) = cell.get_string() {
+                    if let Some(doc_num) = cell.as_string() {
                         if let Some(num_part) = doc_num
                             .strip_prefix(&format!("{}/", current_year))
                             .and_then(|s| s.parse::<i32>().ok())
@@ -477,34 +478,46 @@ impl ExcelDatabase {
         let mut workbook = Workbook::new();
 
         // Documents sheet
-        let docs_sheet = self.create_documents_sheet(&mut workbook)?;
-        for (i, row) in docs_data.iter().enumerate() {
-            for (j, cell) in row.iter().enumerate() {
-                docs_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+        {
+            let docs_sheet = workbook.add_worksheet();
+            Self::create_documents_sheet(docs_sheet)?;
+            for (i, row) in docs_data.iter().enumerate() {
+                for (j, cell) in row.iter().enumerate() {
+                    docs_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+                }
             }
         }
 
         // Commerce sheet
-        let commerce_sheet = self.create_commerce_sheet(&mut workbook)?;
-        for (i, row) in commerce_data.iter().enumerate() {
-            for (j, cell) in row.iter().enumerate() {
-                commerce_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+        {
+            let commerce_sheet = workbook.add_worksheet();
+            Self::create_commerce_sheet(commerce_sheet)?;
+            for (i, row) in commerce_data.iter().enumerate() {
+                for (j, cell) in row.iter().enumerate() {
+                    commerce_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+                }
             }
         }
 
         // Inspections sheet
-        let inspections_sheet = self.create_inspections_sheet(&mut workbook)?;
-        for (i, row) in inspections_data.iter().enumerate() {
-            for (j, cell) in row.iter().enumerate() {
-                inspections_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+        {
+            let inspections_sheet = workbook.add_worksheet();
+            Self::create_inspections_sheet(inspections_sheet)?;
+            for (i, row) in inspections_data.iter().enumerate() {
+                for (j, cell) in row.iter().enumerate() {
+                    inspections_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+                }
             }
         }
 
         // Actions sheet
-        let actions_sheet = self.create_actions_sheet(&mut workbook)?;
-        for (i, row) in actions_data.iter().enumerate() {
-            for (j, cell) in row.iter().enumerate() {
-                actions_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+        {
+            let actions_sheet = workbook.add_worksheet();
+            Self::create_actions_sheet(actions_sheet)?;
+            for (i, row) in actions_data.iter().enumerate() {
+                for (j, cell) in row.iter().enumerate() {
+                    actions_sheet.write_string((i + 1) as u32, j as u16, cell)?;
+                }
             }
         }
 

@@ -1,6 +1,6 @@
 //! Documents list view state
 
-use crate::models::{DocumentMetadata, DocumentType};
+use crate::models::DocumentType;
 
 /// State for the documents list view
 #[derive(Debug, Clone, Default)]

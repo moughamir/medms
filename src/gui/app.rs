@@ -1,11 +1,9 @@
 //! Main GUI application
 
 use crate::database::ExcelDatabase;
-use crate::generator::DocumentGenerator;
-use crate::gui::views::{CommerceForm, DashboardView, DocumentsView, InspectionForm, SettingsView};
+use crate::gui::views::{CommerceForm, DocumentsView, InspectionForm, SettingsView};
 use crate::models::{
-    ActionStatus, CommerceInfo, DashboardStats, DocumentMetadata, DocumentType, EnforcementAction,
-    InspectionRecord, ViolationType,
+    CommerceInfo, DashboardStats, DocumentType, InspectionRecord, ViolationType,
 };
 use eframe::egui;
 
@@ -168,9 +166,13 @@ impl MoroccanDocsApp {
 
     /// Renders the main content area
     fn render_main_content(&mut self, ctx: &egui::Context) {
+        // Clone status message to avoid borrow issues
+        let status_clone = self.status_message.clone();
+        let mut clear_status = false;
+        
         egui::CentralPanel::default().show(ctx, |ui| {
             // Status bar
-            if let Some((message, status_type)) = &self.status_message {
+            if let Some((message, status_type)) = &status_clone {
                 let color = match status_type {
                     StatusType::Success => egui::Color32::from_rgb(76, 175, 80),
                     StatusType::Error => egui::Color32::from_rgb(244, 67, 54),
@@ -179,7 +181,7 @@ impl MoroccanDocsApp {
                 ui.horizontal(|ui| {
                     ui.colored_label(color, message);
                     if ui.button("✕").clicked() {
-                        self.status_message = None;
+                        clear_status = true;
                     }
                 });
                 ui.separator();
@@ -195,6 +197,10 @@ impl MoroccanDocsApp {
                 View::Settings => self.render_settings(ui),
             }
         });
+        
+        if clear_status {
+            self.status_message = None;
+        }
     }
 
     /// Renders the dashboard view
