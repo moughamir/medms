@@ -4,7 +4,7 @@ use crate::models::{
     CommerceInfo, DocumentMetadata, DocumentType, EnforcementAction, InspectionRecord,
 };
 use anyhow::{Context, Result};
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{open_workbook, DataType, Reader, Xlsx};
 use chrono::{Datelike, Local};
 use rust_xlsxwriter::{Color, Format, Workbook, Worksheet};
 use std::path::Path;

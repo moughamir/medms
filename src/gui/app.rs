@@ -81,7 +81,7 @@ impl MoroccanDocsApp {
 
     /// Configures fonts for Arabic text rendering
     fn configure_fonts(ctx: &egui::Context) {
-        let mut fonts = egui::FontDefinitions::default();
+        let fonts = egui::FontDefinitions::default();
 
         // Use system font that supports Arabic
         // On most systems, the default proportional font should work
