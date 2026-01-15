@@ -85,14 +85,12 @@ impl Default for MoroccanDocsApp {
 impl MoroccanDocsApp {
     /// Creates a new application instance
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // Configure fonts for Arabic support
         Self::configure_fonts(&cc.egui_ctx);
         // Install image loaders
         egui_extras::install_image_loaders(&cc.egui_ctx);
         Self::default()
     }
 
-    /// Configures fonts for Arabic text rendering
     /// Configures fonts for Arabic text rendering
     fn configure_fonts(ctx: &egui::Context) {
         // Set Light Mode by default
