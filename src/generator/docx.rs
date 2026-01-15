@@ -305,11 +305,19 @@ impl DocumentGenerator {
             self.metadata.inspector_grade
         );
 
+        let logo_data = include_bytes!("../../assets/images/logo.png");
+        let logo_pic = Pic::new(logo_data).size(1500000, 1500000); // approx 4cm x 4cm (EMU)
+
         let header_table = Table::new(vec![TableRow::new(vec![
             TableCell::new().add_paragraph(
                 Paragraph::new()
                     .add_run(Run::new().add_text(&hierarchy_text).size(20))
                     .align(AlignmentType::Right),
+            ),
+             TableCell::new().add_paragraph(
+                Paragraph::new()
+                    .align(AlignmentType::Center)
+                    .add_run(Run::new().add_image(logo_pic)),
             ),
             TableCell::new().add_paragraph(
                 Paragraph::new()
@@ -318,7 +326,7 @@ impl DocumentGenerator {
             ),
         ])])
         .width(9000, WidthType::Dxa)
-        .set_grid(vec![4500, 4500]);
+        .set_grid(vec![3000, 3000, 3000]);
 
         Header::new().add_table(header_table)
     }

@@ -2,6 +2,8 @@
 
 use crate::models::ViolationType;
 
+
+
 /// Form state for adding/editing an inspection
 #[derive(Debug, Clone)]
 pub struct InspectionForm {
@@ -17,6 +19,9 @@ pub struct InspectionForm {
     pub photo_paths: Vec<String>,
     /// For edit mode
     pub editing_id: Option<String>,
+    
+    // UI Helpers (not persisted)
+    pub commerce_selector: crate::gui::widgets::commerce_selector::CommerceSelector,
 }
 
 impl Default for InspectionForm {
@@ -33,6 +38,7 @@ impl Default for InspectionForm {
             witnesses: Vec::new(),
             photo_paths: Vec::new(),
             editing_id: None,
+            commerce_selector: crate::gui::widgets::CommerceSelector::default(),
         }
     }
 }

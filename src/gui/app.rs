@@ -1,7 +1,11 @@
 //! Main GUI application
 
 use crate::database::ExcelDatabase;
-use crate::gui::views::{CommerceForm, DocumentsView, InspectionForm, SettingsView};
+use crate::gui::localization::tr;
+use crate::gui::text_utils::reshape;
+use crate::gui::views::{
+    CommerceForm, DocumentsView, InspectionForm, OnboardingView, SettingsView,
+};
 use crate::models::{
     CommerceInfo, DashboardStats, DocumentType, InspectionRecord, ViolationType,
 };
@@ -21,14 +25,18 @@ pub struct MoroccanDocsApp {
     inspection_form: InspectionForm,
     /// Documents view state
     documents_view: DocumentsView,
+    /// Document form state
+    document_form: crate::gui::views::documents::DocumentForm,
     /// Settings view state
     settings_view: SettingsView,
+    /// Onboarding view state
+    onboarding_view: OnboardingView,
     /// Status message
     status_message: Option<(String, StatusType)>,
-    /// Config: commune name
-    commune: String,
-    /// Config: arrondissement name
-    arrondissement: String,
+    /// Authentication state
+    is_authenticated: bool,
+    /// Login password input
+    login_password: String,
 }
 
 /// Type of status message
@@ -52,7 +60,8 @@ pub enum View {
 
 impl Default for MoroccanDocsApp {
     fn default() -> Self {
-        let database = ExcelDatabase::new("police_administrative.xlsx");
+        let settings_view = SettingsView::default();
+        let database = ExcelDatabase::new(&settings_view.database_path);
         let _ = database.initialize();
         let dashboard_stats = database.get_dashboard_stats().unwrap_or_default();
 
@@ -63,10 +72,12 @@ impl Default for MoroccanDocsApp {
             commerce_form: CommerceForm::default(),
             inspection_form: InspectionForm::default(),
             documents_view: DocumentsView::default(),
-            settings_view: SettingsView::default(),
+            document_form: crate::gui::views::documents::DocumentForm::default(),
+            settings_view,
+            onboarding_view: OnboardingView::default(),
             status_message: None,
-            commune: "جماعة ...".to_string(),
-            arrondissement: "مقاطعة ...".to_string(),
+            is_authenticated: false,
+            login_password: String::new(),
         }
     }
 }
@@ -74,22 +85,42 @@ impl Default for MoroccanDocsApp {
 impl MoroccanDocsApp {
     /// Creates a new application instance
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // Configure fonts for Arabic support
         Self::configure_fonts(&cc.egui_ctx);
+        // Install image loaders
+        egui_extras::install_image_loaders(&cc.egui_ctx);
         Self::default()
     }
 
     /// Configures fonts for Arabic text rendering
     fn configure_fonts(ctx: &egui::Context) {
-        let fonts = egui::FontDefinitions::default();
+        // Set Light Mode by default
+        ctx.set_visuals(egui::Visuals::light());
 
-        // Use system font that supports Arabic
-        // On most systems, the default proportional font should work
-        // For better Arabic support, we would add a custom Arabic font here
+        let mut fonts = egui::FontDefinitions::default();
+
+        // Install Noto Sans Arabic
+        fonts.font_data.insert(
+            "NotoSansArabic".to_owned(),
+            egui::FontData::from_static(include_bytes!("../../assets/fonts/NotoSansArabic-Regular.ttf")),
+        );
+
+        // Put my font first (highest priority) for proportional text:
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "NotoSansArabic".to_owned());
+
+        // Put my font as last fallback for monospace:
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .push("NotoSansArabic".to_owned());
 
         ctx.set_fonts(fonts);
 
-        // Set RTL text direction for Arabic
+        // Set styling
         let mut style = (*ctx.style()).clone();
         style.spacing.item_spacing = egui::vec2(8.0, 8.0);
         ctx.set_style(style);
@@ -119,7 +150,7 @@ impl MoroccanDocsApp {
             .resizable(false)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.heading("الشرطة الإدارية");
+                    ui.heading(tr("app_title", &self.settings_view.language));
                     ui.label("Police Administrative");
                     ui.separator();
                 });
@@ -128,22 +159,21 @@ impl MoroccanDocsApp {
 
                 // Navigation buttons
                 let nav_items = [
-                    (View::Dashboard, "📊", "لوحة التحكم", "Tableau de bord"),
-                    (View::NewCommerce, "🏪", "محل جديد", "Nouveau commerce"),
+                    (View::Dashboard, "📊", tr("dashboard", &self.settings_view.language)),
+                    (View::NewCommerce, "🏪", tr("new_commerce", &self.settings_view.language)),
                     (
                         View::NewInspection,
                         "🔍",
-                        "معاينة جديدة",
-                        "Nouvelle inspection",
+                        tr("new_inspection", &self.settings_view.language),
                     ),
-                    (View::NewDocument, "📄", "وثيقة جديدة", "Nouveau document"),
-                    (View::DocumentList, "📁", "سجل الوثائق", "Registre"),
-                    (View::Settings, "⚙", "الإعدادات", "Paramètres"),
+                    (View::NewDocument, "📄", tr("new_document", &self.settings_view.language)),
+                    (View::DocumentList, "📁", tr("documents_registry", &self.settings_view.language)),
+                    (View::Settings, "⚙", tr("settings", &self.settings_view.language)),
                 ];
 
-                for (view, icon, ar_label, fr_label) in nav_items {
+                for (view, icon, label) in nav_items {
                     let is_selected = self.current_view == view;
-                    let button_text = format!("{} {} / {}", icon, ar_label, fr_label);
+                    let button_text = format!("{} {}", icon, label);
 
                     if ui
                         .selectable_label(is_selected, button_text)
@@ -159,8 +189,8 @@ impl MoroccanDocsApp {
 
                 // Quick stats
                 ui.add_space(10.0);
-                ui.label(format!("المحلات: {}", self.dashboard_stats.total_commerces));
-                ui.label(format!("الوثائق: {}", self.dashboard_stats.total_documents));
+                ui.label(format!("{}: {}", tr("commerces", &self.settings_view.language), self.dashboard_stats.total_commerces));
+                ui.label(format!("{}: {}", tr("documents", &self.settings_view.language), self.dashboard_stats.total_documents));
             });
     }
 
@@ -205,7 +235,7 @@ impl MoroccanDocsApp {
 
     /// Renders the dashboard view
     fn render_dashboard(&mut self, ui: &mut egui::Ui) {
-        ui.heading("لوحة التحكم / Tableau de bord");
+        ui.heading(tr("dashboard", &self.settings_view.language));
         ui.separator();
 
         // Summary cards
@@ -213,25 +243,25 @@ impl MoroccanDocsApp {
             self.render_stat_card(
                 ui,
                 "🏪",
-                "المحلات",
+                &tr("commerces", &self.settings_view.language),
                 &self.dashboard_stats.total_commerces.to_string(),
             );
             self.render_stat_card(
                 ui,
                 "🔍",
-                "المعاينات",
+                &tr("inspections", &self.settings_view.language),
                 &self.dashboard_stats.total_inspections.to_string(),
             );
             self.render_stat_card(
                 ui,
                 "📄",
-                "الوثائق",
+                &tr("documents", &self.settings_view.language),
                 &self.dashboard_stats.total_documents.to_string(),
             );
             self.render_stat_card(
                 ui,
                 "⚠",
-                "بدون رخصة",
+                &tr("no_license", &self.settings_view.language),
                 &self.dashboard_stats.commerces_sans_autorisation.to_string(),
             );
         });
@@ -243,25 +273,25 @@ impl MoroccanDocsApp {
             self.render_stat_card(
                 ui,
                 "💰",
-                "الغرامات الصادرة",
+                &tr("fines_issued", &self.settings_view.language),
                 &format!("{:.2} DH", self.dashboard_stats.total_fines_issued),
             );
             self.render_stat_card(
                 ui,
                 "✓",
-                "المحصلة",
+                &tr("collected", &self.settings_view.language),
                 &format!("{:.2} DH", self.dashboard_stats.total_fines_collected),
             );
             self.render_stat_card(
                 ui,
                 "⏳",
-                "المستحقة",
+                &tr("pending", &self.settings_view.language),
                 &format!("{:.2} DH", self.dashboard_stats.pending_fines),
             );
             self.render_stat_card(
                 ui,
                 "⏰",
-                "متأخرة",
+                &tr("overdue", &self.settings_view.language),
                 &self.dashboard_stats.overdue_actions.to_string(),
             );
         });
@@ -271,7 +301,7 @@ impl MoroccanDocsApp {
 
         // Violations by type
         if !self.dashboard_stats.violations_by_type.is_empty() {
-            ui.heading("المخالفات حسب النوع / Infractions par type");
+            ui.heading(tr("violations_by_type", &self.settings_view.language));
             ui.add_space(10.0);
 
             let top_violations = self.dashboard_stats.top_violations(5);
@@ -296,9 +326,9 @@ impl MoroccanDocsApp {
         ui.add_space(20.0);
 
         // Refresh button
-        if ui.button("🔄 تحديث / Actualiser").clicked() {
+        if ui.button(format!("🔄 {}", tr("refresh", &self.settings_view.language))).clicked() {
             self.refresh_stats();
-            self.set_status("تم التحديث / Actualisé".to_string(), StatusType::Success);
+            self.set_status(tr("updated", &self.settings_view.language), StatusType::Success);
         }
     }
 
@@ -320,7 +350,7 @@ impl MoroccanDocsApp {
 
     /// Renders the commerce form
     fn render_commerce_form(&mut self, ui: &mut egui::Ui) {
-        ui.heading("إضافة محل جديد / Nouveau commerce");
+        ui.heading(tr("add_commerce", &self.settings_view.language));
         ui.separator();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
@@ -329,66 +359,66 @@ impl MoroccanDocsApp {
                 .spacing([20.0, 10.0])
                 .show(ui, |ui| {
                     // Trade name
-                    ui.label("التسمية التجارية:");
+                    ui.label(format!("{}:", tr("trade_name", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.denomination);
                     ui.end_row();
 
                     // Owner name
-                    ui.label("اسم المالك:");
+                    ui.label(format!("{}:", tr("owner_name", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.owner_name);
                     ui.end_row();
 
                     // CIN
-                    ui.label("رقم ب.و.ت:");
+                    ui.label(format!("{}:", tr("cin", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.owner_cin);
                     ui.end_row();
 
                     // Phone
-                    ui.label("الهاتف:");
+                    ui.label(format!("{}:", tr("phone", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.owner_phone);
                     ui.end_row();
 
                     // Owner address
-                    ui.label("عنوان المالك:");
+                    ui.label(format!("{}:", tr("owner_address", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.owner_address);
                     ui.end_row();
 
                     // Establishment address
-                    ui.label("عنوان المحل:");
+                    ui.label(format!("{}:", tr("shop_address", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.establishment_address);
                     ui.end_row();
 
                     // District
-                    ui.label("الحي:");
+                    ui.label(format!("{}:", tr("district", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.quartier);
                     ui.end_row();
 
                     // Activity type
-                    ui.label("نوع النشاط:");
+                    ui.label(format!("{}:", tr("activity", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.activity_type);
                     ui.end_row();
 
                     // ICE
-                    ui.label("رقم ICE:");
+                    ui.label(format!("{}:", tr("ice", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.ice_number);
                     ui.end_row();
 
                     // Patente
-                    ui.label("رقم الباطونطا:");
+                    ui.label(format!("{}:", tr("patente", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.commerce_form.patente_number);
                     ui.end_row();
 
                     // Authorization
-                    ui.label("رخصة:");
-                    ui.checkbox(&mut self.commerce_form.has_autorisation, "نعم");
+                    ui.label(format!("{}:", tr("has_license", &self.settings_view.language)));
+                    ui.checkbox(&mut self.commerce_form.has_autorisation, tr("yes", &self.settings_view.language));
                     ui.end_row();
 
                     if self.commerce_form.has_autorisation {
-                        ui.label("رقم الرخصة:");
+                        ui.label(format!("{}:", tr("license_num", &self.settings_view.language)));
                         ui.text_edit_singleline(&mut self.commerce_form.autorisation_number);
                         ui.end_row();
 
-                        ui.label("تاريخ الرخصة:");
+                        ui.label(format!("{}:", tr("license_date", &self.settings_view.language)));
                         ui.text_edit_singleline(&mut self.commerce_form.autorisation_date);
                         ui.end_row();
                     }
@@ -397,10 +427,10 @@ impl MoroccanDocsApp {
             ui.add_space(20.0);
 
             ui.horizontal(|ui| {
-                if ui.button("💾 حفظ / Enregistrer").clicked() {
+                if ui.button(format!("💾 {}", tr("save", &self.settings_view.language))).clicked() {
                     self.save_commerce();
                 }
-                if ui.button("🗑 مسح / Effacer").clicked() {
+                if ui.button(format!("🗑 {}", tr("clear", &self.settings_view.language))).clicked() {
                     self.commerce_form = CommerceForm::default();
                 }
             });
@@ -429,21 +459,21 @@ impl MoroccanDocsApp {
         match self.database.save_commerce(&commerce) {
             Ok(_) => {
                 self.set_status(
-                    "تم حفظ المحل بنجاح / Commerce enregistré".to_string(),
+                    tr("commerce_saved", &self.settings_view.language),
                     StatusType::Success,
                 );
                 self.commerce_form = CommerceForm::default();
                 self.refresh_stats();
             }
             Err(e) => {
-                self.set_status(format!("خطأ: {} / Erreur: {}", e, e), StatusType::Error);
+                self.set_status(format!("{}: {}", tr("error", &self.settings_view.language), e), StatusType::Error);
             }
         }
     }
 
     /// Renders the inspection form
     fn render_inspection_form(&mut self, ui: &mut egui::Ui) {
-        ui.heading("معاينة جديدة / Nouvelle inspection");
+        ui.heading(tr("new_inspection", &self.settings_view.language));
         ui.separator();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
@@ -452,31 +482,50 @@ impl MoroccanDocsApp {
                 .spacing([20.0, 10.0])
                 .show(ui, |ui| {
                     // Inspector name
-                    ui.label("اسم العون:");
+                    ui.label(format!("{}:", tr("inspector_name", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.inspection_form.inspector_name);
                     ui.end_row();
 
                     // Inspector grade
-                    ui.label("رتبة العون:");
+                    ui.label(format!("{}:", tr("inspector_grade", &self.settings_view.language)));
                     ui.text_edit_singleline(&mut self.inspection_form.inspector_grade);
                     ui.end_row();
 
-                    // Commerce selection (simplified - would need dropdown)
-                    ui.label("المحل:");
-                    ui.text_edit_singleline(&mut self.inspection_form.commerce_name);
+                    // Commerce selection
+                    let commerces = self.database.get_all_commerces().unwrap_or_default();
+                    match self.inspection_form.commerce_selector.ui(
+                        ui,
+                        &commerces,
+                        &self.settings_view.language,
+                    ) {
+                        crate::gui::widgets::SelectorResult::Selected(selected) => {
+                            self.inspection_form.commerce_id = selected.commerce_id;
+                            self.inspection_form.commerce_name = selected.denomination;
+                        }
+                        crate::gui::widgets::SelectorResult::AddNew => {
+                            self.current_view = View::NewCommerce;
+                            self.clear_status();
+                        }
+                        crate::gui::widgets::SelectorResult::None => {}
+                    }
+                    
+                    // Show selected commerce name if any
+                    if !self.inspection_form.commerce_name.is_empty() {
+                        ui.label(format!("{} : {}", tr("shop", &self.settings_view.language), self.inspection_form.commerce_name));
+                    }
                     ui.end_row();
 
                     // Violation type
-                    ui.label("نوع المخالفة:");
+                    ui.label(format!("{}:", tr("violation_type", &self.settings_view.language)));
                     egui::ComboBox::from_id_salt("violation_type")
-                        .selected_text(self.inspection_form.selected_violation.to_arabic())
+                        .selected_text(reshape(self.inspection_form.selected_violation.to_arabic()))
                         .show_ui(ui, |ui| {
                             for vtype in ViolationType::all() {
                                 let label = vtype.to_string();
                                 if ui
                                     .selectable_label(
                                         self.inspection_form.selected_violation == vtype,
-                                        &label,
+                                        &reshape(&label), // TODO: also localize violation types if needed
                                     )
                                     .clicked()
                                 {
@@ -487,12 +536,12 @@ impl MoroccanDocsApp {
                     ui.end_row();
 
                     // Description
-                    ui.label("وصف المخالفة:");
+                    ui.label(format!("{}:", tr("description", &self.settings_view.language)));
                     ui.text_edit_multiline(&mut self.inspection_form.description);
                     ui.end_row();
 
                     // Measures taken
-                    ui.label("الإجراءات المتخذة:");
+                    ui.label(format!("{}:", tr("measures", &self.settings_view.language)));
                     ui.text_edit_multiline(&mut self.inspection_form.measures_taken);
                     ui.end_row();
                 });
@@ -500,10 +549,10 @@ impl MoroccanDocsApp {
             ui.add_space(20.0);
 
             ui.horizontal(|ui| {
-                if ui.button("💾 حفظ / Enregistrer").clicked() {
+                if ui.button(format!("💾 {}", tr("save", &self.settings_view.language))).clicked() {
                     self.save_inspection();
                 }
-                if ui.button("🗑 مسح / Effacer").clicked() {
+                if ui.button(format!("🗑 {}", tr("clear", &self.settings_view.language))).clicked() {
                     self.inspection_form = InspectionForm::default();
                 }
             });
@@ -534,47 +583,154 @@ impl MoroccanDocsApp {
         match self.database.save_inspection(&inspection) {
             Ok(_) => {
                 self.set_status(
-                    "تم حفظ المعاينة بنجاح / Inspection enregistrée".to_string(),
+                    tr("inspection_saved", &self.settings_view.language),
                     StatusType::Success,
                 );
                 self.inspection_form = InspectionForm::default();
                 self.refresh_stats();
             }
             Err(e) => {
-                self.set_status(format!("خطأ: {} / Erreur: {}", e, e), StatusType::Error);
+                self.set_status(format!("{}: {}", tr("error", &self.settings_view.language), e), StatusType::Error);
             }
         }
     }
 
     /// Renders the document generation form
     fn render_document_form(&mut self, ui: &mut egui::Ui) {
-        ui.heading("إنشاء وثيقة جديدة / Nouveau document");
+        ui.heading(tr("new_document", &self.settings_view.language));
         ui.separator();
 
-        ui.label("اختر نوع الوثيقة / Choisir le type:");
-        ui.add_space(10.0);
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            egui::Grid::new("document_form_grid")
+                .num_columns(2)
+                .spacing([20.0, 10.0])
+                .show(ui, |ui| {
+                     // Type selector
+                    ui.label(format!("{}:", tr("type", &self.settings_view.language)));
+                    egui::ComboBox::from_id_salt("doc_type")
+                        .selected_text(self.document_form.doc_type.as_ref().map(|t| reshape(t.to_arabic())).unwrap_or_else(|| tr("select_type", &self.settings_view.language)))
+                        .show_ui(ui, |ui| {
+                            for t in DocumentType::all() {
+                                if ui.selectable_label(self.document_form.doc_type == Some(t.clone()), reshape(t.to_arabic())).clicked() {
+                                    self.document_form.doc_type = Some(t);
+                                }
+                            }
+                        });
+                    ui.end_row();
 
-        for doc_type in DocumentType::all() {
-            if ui.button(doc_type.to_string()).clicked() {
-                // Would open document creation wizard
-                self.set_status(
-                    format!("إنشاء {} / Création {}", doc_type.to_arabic(), doc_type.to_french()),
-                    StatusType::Info,
-                );
+                     // Commerce Selector
+                    ui.label(format!("{}:", tr("shop", &self.settings_view.language)));
+                    let commerces = self.database.get_all_commerces().unwrap_or_default();
+                    match self.document_form.commerce_selector.ui(ui, &commerces, &self.settings_view.language) {
+                         crate::gui::widgets::SelectorResult::Selected(c) => {
+                             self.document_form.commerce_id = c.commerce_id;
+                             self.document_form.commerce_name = c.denomination;
+                         }
+                         crate::gui::widgets::SelectorResult::AddNew => {
+                              self.current_view = View::NewCommerce;
+                              self.clear_status();
+                         }
+                         _ => {}
+                    }
+                    ui.end_row();
+                });
+            
+            // Show selected commerce name
+            if !self.document_form.commerce_name.is_empty() {
+                ui.colored_label(egui::Color32::BLUE, format!("{} : {}", tr("shop", &self.settings_view.language), self.document_form.commerce_name));
             }
+            ui.add_space(10.0);
+            
+            // Content
+            ui.label(format!("{}:", tr("content", &self.settings_view.language)));
+            ui.text_edit_multiline(&mut self.document_form.content);
+            ui.add_space(20.0);
+            
+            // Generate Button
+            ui.horizontal(|ui| {
+                if ui.button(format!("⚙ {}", tr("create", &self.settings_view.language))).clicked() {
+                    self.generate_document();
+                }
+                if ui.button(format!("🗑 {}", tr("clear", &self.settings_view.language))).clicked() {
+                    self.document_form = crate::gui::views::documents::DocumentForm::default();
+                }
+            });
+        });
+    }
+
+    /// Generates the document based on the form
+    fn generate_document(&mut self) {
+        if self.document_form.doc_type.is_none() {
+             self.set_status("المرجو اختيار نوع الوثيقة".to_string(), StatusType::Error); // TODO: Localize error
+             return;
+        }
+
+        // 1. Get next doc number
+        let doc_number = match self.database.get_next_doc_number() {
+            Ok(n) => n,
+            Err(e) => {
+                self.set_status(format!("Error getting doc number: {}", e), StatusType::Error);
+                return;
+            }
+        };
+        
+        // 2. Create metadata
+        let doc_type = self.document_form.doc_type.clone().unwrap();
+        let mut metadata = crate::models::DocumentMetadata::new(doc_type, doc_number);
+        metadata.commerce_id = self.document_form.commerce_id.clone();
+        metadata.content = self.document_form.content.clone();
+        // Inspector defaults (should be from settings or login context, using dummy for now if empty)
+        metadata.inspector_name = "مفتش الشرطة الإدارية".to_string(); 
+        metadata.inspector_grade = "محرر".to_string();
+        
+        metadata.commune = self.settings_view.commune.clone();
+        metadata.arrondissement = self.settings_view.arrondissement.clone();
+
+        // 3. Generators
+        let commerce = if !metadata.commerce_id.is_empty() {
+             self.database.get_commerce_by_id(&metadata.commerce_id).unwrap_or(None)
+        } else {
+            None
+        };
+        
+        let generator = crate::generator::docx::DocumentGenerator::new(metadata.clone(), commerce, None, None);
+        
+        // 4. Save file
+        let filename = generator.generate_filename();
+        let docs_dir = std::path::Path::new("docs");
+        if !docs_dir.exists() {
+             if let Err(e) = std::fs::create_dir(docs_dir) {
+                 self.set_status(format!("Failed to create docs dir: {}", e), StatusType::Error);
+                 return;
+             }
+        }
+        let output_path = docs_dir.join(&filename);
+        
+        match generator.create_document(output_path.to_str().unwrap_or("docs/output.docx")) {
+            Ok(_) => {
+                // 5. Save metadata to DB
+                if let Err(e) = self.database.save_metadata(&metadata) {
+                    self.set_status(format!("Saved file but failed to save DB: {}", e), StatusType::Error);
+                } else {
+                    self.set_status(format!("{} : {}", tr("doc_created", &self.settings_view.language), filename), StatusType::Success);
+                    self.document_form = crate::gui::views::documents::DocumentForm::default(); // Reset
+                    self.refresh_stats();
+                }
+            }
+            Err(e) => self.set_status(format!("Error creating document: {}", e), StatusType::Error),
         }
     }
 
     /// Renders the document list view
     fn render_document_list(&mut self, ui: &mut egui::Ui) {
-        ui.heading("سجل الوثائق / Registre des documents");
+        ui.heading(tr("documents_registry", &self.settings_view.language));
         ui.separator();
 
         // Search bar
         ui.horizontal(|ui| {
             ui.label("🔍");
             ui.text_edit_singleline(&mut self.documents_view.search_query);
-            if ui.button("بحث / Rechercher").clicked() {
+            if ui.button(tr("search", &self.settings_view.language)).clicked() {
                 // Would trigger search
             }
         });
@@ -585,12 +741,28 @@ impl MoroccanDocsApp {
         match self.database.get_recent_documents(50) {
             Ok(docs) => {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    if let Some(docs_dir) = std::fs::canonicalize("docs").ok() {
+                         if ui.button(format!("📂 {}", tr("open_folder", &self.settings_view.language))).clicked() {
+                             let _ = open::that(docs_dir);
+                         }
+                    }
+                    ui.separator();
+
                     for doc in docs {
                         ui.horizontal(|ui| {
                             ui.label(&doc.doc_number);
-                            ui.label(doc.doc_type.to_arabic());
+                            ui.label(reshape(doc.doc_type.to_arabic()));
                             ui.label(&doc.creation_date);
                             ui.label(&doc.inspector_name);
+                            
+                            // Open Button
+                            let filename = format!("{}_{}.docx", doc.doc_number.replace('/', "_"), doc.doc_type.to_arabic());
+                            let path = std::path::Path::new("docs").join(&filename);
+                            if path.exists() {
+                                if ui.button("📄").on_hover_text(tr("open", &self.settings_view.language)).clicked() {
+                                    let _ = open::that(path);
+                                }
+                            }
                         });
                         ui.separator();
                     }
@@ -599,7 +771,7 @@ impl MoroccanDocsApp {
             Err(e) => {
                 ui.colored_label(
                     egui::Color32::RED,
-                    format!("خطأ في تحميل الوثائق: {}", e),
+                    format!("{}: {}", tr("loading_error", &self.settings_view.language), e),
                 );
             }
         }
@@ -607,40 +779,74 @@ impl MoroccanDocsApp {
 
     /// Renders the settings view
     fn render_settings(&mut self, ui: &mut egui::Ui) {
-        ui.heading("الإعدادات / Paramètres");
+        ui.heading(tr("settings", &self.settings_view.language));
         ui.separator();
 
         egui::Grid::new("settings_grid")
             .num_columns(2)
             .spacing([20.0, 10.0])
             .show(ui, |ui| {
-                ui.label("الجماعة:");
-                ui.text_edit_singleline(&mut self.commune);
+                ui.label(format!("{}:", tr("commune", &self.settings_view.language)));
+                ui.text_edit_singleline(&mut self.settings_view.commune);
                 ui.end_row();
 
-                ui.label("المقاطعة:");
-                ui.text_edit_singleline(&mut self.arrondissement);
+                ui.label(format!("{}:", tr("arrondissement", &self.settings_view.language)));
+                ui.text_edit_singleline(&mut self.settings_view.arrondissement);
                 ui.end_row();
 
-                ui.label("ملف قاعدة البيانات:");
+                ui.label(format!("{}:", tr("db_file", &self.settings_view.language)));
                 ui.label(self.database.file_path());
                 ui.end_row();
             });
 
         ui.add_space(20.0);
 
-        if ui.button("💾 حفظ الإعدادات / Enregistrer").clicked() {
+        if ui.button(format!("💾 {}", tr("save", &self.settings_view.language))).clicked() {
             self.set_status(
-                "تم حفظ الإعدادات / Paramètres enregistrés".to_string(),
+                tr("settings_saved", &self.settings_view.language),
                 StatusType::Success,
             );
         }
+    }
+    /// Renders the login screen
+    fn render_login(&mut self, ctx: &egui::Context) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add_space(100.0);
+                ui.heading(tr("login", &self.settings_view.language));
+                ui.add_space(20.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", tr("password", &self.settings_view.language)));
+                    ui.add(egui::TextEdit::singleline(&mut self.login_password).password(true));
+                });
+                
+                ui.add_space(20.0);
+                
+                if ui.button(tr("enter", &self.settings_view.language)).clicked() {
+                    if self.login_password == "admin" {
+                        self.is_authenticated = true;
+                        self.login_password.clear();
+                    } else {
+                        // Using a simple alert for now if status can't be shown yet (or show invalid password text)
+                        ui.label(tr("incorrect_password", &self.settings_view.language));
+                    }
+                }
+            });
+        });
     }
 }
 
 impl eframe::App for MoroccanDocsApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.render_sidebar(ctx);
-        self.render_main_content(ctx);
+        if !self.settings_view.is_onboarded {
+            self.onboarding_view.update(ctx, &mut self.settings_view);
+        } else if !self.is_authenticated {
+            self.render_login(ctx);
+        } else {
+            self.render_sidebar(ctx);
+            self.render_main_content(ctx);
+        }
     }
+
 }

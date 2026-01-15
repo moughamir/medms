@@ -240,13 +240,11 @@ impl ExcelDatabase {
 
     /// Saves a commerce record (preserving all other data)
     pub fn save_commerce(&self, commerce: &CommerceInfo) -> Result<()> {
-        // Read ALL existing data from ALL sheets
         let docs_data = self.read_sheet_data(SHEET_DOCUMENTS)?;
         let mut commerce_data = self.read_sheet_data(SHEET_COMMERCE)?;
         let inspections_data = self.read_sheet_data(SHEET_INSPECTIONS)?;
         let actions_data = self.read_sheet_data(SHEET_ACTIONS)?;
 
-        // Add new commerce record
         commerce_data.push(vec![
             commerce.commerce_id.clone(),
             commerce.denomination.clone(),
@@ -268,7 +266,6 @@ impl ExcelDatabase {
             commerce.autorisation_date.clone(),
         ]);
 
-        // Write ALL data back
         self.write_all_sheets(&docs_data, &commerce_data, &inspections_data, &actions_data)
     }
 
@@ -316,7 +313,6 @@ impl ExcelDatabase {
         let mut inspections_data = self.read_sheet_data(SHEET_INSPECTIONS)?;
         let actions_data = self.read_sheet_data(SHEET_ACTIONS)?;
 
-        // Format violations as comma-separated
         let violations_str = inspection.violations_summary();
 
         inspections_data.push(vec![

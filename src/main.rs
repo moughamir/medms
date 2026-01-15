@@ -1,13 +1,9 @@
-//! Moroccan Administrative Documents Generator
 //!
-//! A cross-platform desktop application for municipal administrative police
-//! document management. Supports both GUI and CLI modes.
 
 use anyhow::Result;
 use moroccan_docs::{gui::MoroccanDocsApp, run_cli};
 
 fn main() -> Result<()> {
-    // Initialize logging
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
@@ -15,15 +11,12 @@ fn main() -> Result<()> {
         )
         .init();
 
-    // Check for --cli flag
     let args: Vec<String> = std::env::args().collect();
 
     if args.contains(&"--cli".to_string()) || args.contains(&"-c".to_string()) {
-        // CLI mode
         tracing::info!("Starting in CLI mode");
         run_cli()?;
     } else {
-        // GUI mode
         tracing::info!("Starting in GUI mode");
 
         let options = eframe::NativeOptions {

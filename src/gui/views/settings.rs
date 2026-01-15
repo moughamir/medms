@@ -1,7 +1,7 @@
 //! Settings view state
 
 /// State for the settings view
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SettingsView {
     /// Commune name
     pub commune: String,
@@ -21,6 +21,8 @@ pub struct SettingsView {
     pub language: Language,
     /// Theme preference
     pub theme: Theme,
+    /// Onboarding status
+    pub is_onboarded: bool,
 }
 
 /// Language options
@@ -63,13 +65,23 @@ impl Theme {
 
 impl SettingsView {
     pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for SettingsView {
+    fn default() -> Self {
         Self {
             commune: "جماعة ...".to_string(),
             arrondissement: "مقاطعة ...".to_string(),
             service: "الشرطة الإدارية".to_string(),
-            database_path: "police_administrative.xlsx".to_string(),
-            output_directory: "./documents".to_string(),
-            ..Default::default()
+            default_inspector_name: String::new(),
+            default_inspector_grade: String::new(),
+            database_path: "store/police_administrative.xlsx".to_string(),
+            output_directory: "store/documents".to_string(),
+            language: Language::ArabicFrench,
+            theme: Theme::Dark,
+            is_onboarded: false,
         }
     }
 }
