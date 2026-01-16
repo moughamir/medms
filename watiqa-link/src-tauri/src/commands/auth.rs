@@ -1,3 +1,5 @@
+use crate::error::AppResult;
+use crate::security::crypto::CryptEngine;
 use crate::security::totp::TotpSecret;
 use serde::Serialize;
 use sqlx::SqlitePool;
@@ -14,8 +16,9 @@ pub struct TotpSetupResponse {
 pub async fn setup_totp(
     username: String,
     db: State<'_, SqlitePool>,
-) -> Result<TotpSetupResponse, String> {
-    let totp = TotpSecret::generate("Watiqa - Bouskoura", &username).map_err(|e| e.to_string())?;
+) -> AppResult<TotpSetupResponse> {
+    let totp = TotpSecret::generate("Watiqa - Bouskoura", &username)?;
+    let crypto = CryptEngine::new()?;
 
     let backup_codes: Vec<String> = (0..8)
         .map(|_| format!("{:08}", rand::random::<u32>() % 100_000_000))
@@ -25,15 +28,17 @@ pub async fn setup_totp(
     let secret = totp.secret.clone();
     let qr_uri = totp.provisioning_uri();
 
+    // Encrypt the secret before storing
+    let encrypted_secret = crypto.encrypt(&totp.secret)?;
+
     sqlx::query!(
         "UPDATE users SET totp_secret = ?, backup_codes = ?, totp_enabled = 1 WHERE username = ?",
-        totp.secret,
+        encrypted_secret,
         backup_codes_json,
         username
     )
     .execute(&*db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     Ok(TotpSetupResponse {
         secret,
@@ -47,22 +52,26 @@ pub async fn verify_totp(
     username: String,
     code: String,
     db: State<'_, SqlitePool>,
-) -> Result<bool, String> {
+) -> AppResult<bool> {
+    let crypto = CryptEngine::new()?;
+
     let row = sqlx::query!(
         "SELECT totp_secret FROM users WHERE username = ? AND totp_enabled = 1",
         username
     )
     .fetch_one(&*db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
+
+    let encrypted_secret = row.totp_secret.unwrap_or_default();
+    let decrypted_secret = crypto.decrypt(&encrypted_secret)?;
 
     let totp = TotpSecret {
-        secret: row.totp_secret.unwrap_or_default(),
+        secret: decrypted_secret,
         issuer: "Watiqa".to_string(),
         account: username,
         digits: 6,
         period: 30,
     };
 
-    totp.verify_code(&code, None).map_err(|e| e.to_string())
+    Ok(totp.verify_code(&code, None)?)
 }

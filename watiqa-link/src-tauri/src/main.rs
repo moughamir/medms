@@ -2,6 +2,7 @@
 
 mod commands;
 mod document;
+mod error;
 mod security;
 mod templates;
 mod workflow;

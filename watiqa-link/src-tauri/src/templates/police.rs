@@ -1,4 +1,5 @@
 use anyhow::Result;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use zip::{ZipArchive, ZipWriter};
@@ -38,15 +39,7 @@ impl TemplateEngine {
                 let mut contents = String::new();
                 file.read_to_string(&mut contents)?;
 
-                contents = contents
-                    .replace("{{CITIZEN_NAME}}", &data.citizen_name)
-                    .replace("{{CITIZEN_CIN}}", &data.citizen_cin)
-                    .replace("{{CITIZEN_ADDRESS}}", &data.citizen_address)
-                    .replace("{{AGENT_NAME}}", &data.agent_name)
-                    .replace("{{AGENT_GRADE}}", &data.agent_grade)
-                    .replace("{{COMMUNE}}", &data.commune)
-                    .replace("{{UUID}}", &data.uuid.to_string())
-                    .replace("{{TIMESTAMP}}", &data.timestamp);
+                contents = Self::replace_placeholders(&contents, data);
 
                 output_zip.start_file(&name, Default::default())?;
                 output_zip.write_all(contents.as_bytes())?;
@@ -58,5 +51,60 @@ impl TemplateEngine {
 
         output_zip.finish()?;
         Ok(())
+    }
+
+    fn replace_placeholders(xml: &str, data: &PoliceDocumentData) -> String {
+        let mut result = xml.to_string();
+
+        let placeholders = [
+            ("CITIZEN_NAME", &data.citizen_name),
+            ("CITIZEN_CIN", &data.citizen_cin),
+            ("CITIZEN_ADDRESS", &data.citizen_address),
+            ("AGENT_NAME", &data.agent_name),
+            ("AGENT_GRADE", &data.agent_grade),
+            ("COMMUNE", &data.commune),
+            ("UUID", &data.uuid.to_string()),
+            ("TIMESTAMP", &data.timestamp),
+        ];
+
+        for (key, value) in placeholders {
+            // Pattern matches {{ followed by optional XML tags, then key, then optional XML tags, then }}
+            let pattern = format!(r"\x7B\x7B(?:<[^>]+>)*{}(?:<[^>]+>)*\x7D\x7D", key);
+            let re = Regex::new(&pattern).unwrap();
+            result = re.replace_all(&result, value).to_string();
+        }
+
+        result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_robust_replacement() {
+        let data = PoliceDocumentData {
+            template_id: "test".to_string(),
+            citizen_name: "Yassine".to_string(),
+            citizen_cin: "AB123456".to_string(),
+            citizen_address: "Bouskoura".to_string(),
+            agent_name: "Agent X".to_string(),
+            agent_grade: "Grade A".to_string(),
+            commune: "Bouskoura".to_string(),
+            uuid: Uuid::nil(),
+            timestamp: "2026-01-16".to_string(),
+        };
+
+        // Case 1: Normal replacement
+        let xml = "Hello {{CITIZEN_NAME}}!";
+        let replaced = TemplateEngine::replace_placeholders(xml, &data);
+        assert_eq!(replaced, "Hello Yassine!");
+
+        // Case 2: Fragmented XML replacement
+        let xml_fragmented = "Hello {{<w:t>CITIZEN_NAME</w:t>}}!";
+        let replaced_fragmented = TemplateEngine::replace_placeholders(xml_fragmented, &data);
+        assert_eq!(replaced_fragmented, "Hello Yassine!");
     }
 }
