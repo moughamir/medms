@@ -120,3 +120,50 @@ impl DocumentConverter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[tokio::test]
+    async fn test_converter_init() {
+        let converter = DocumentConverter::new(PathBuf::from("/usr/bin/libreoffice"), 2);
+        assert_eq!(converter.semaphore.available_permits(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_convert_invalid_input() {
+        let converter = DocumentConverter::new(PathBuf::from("/usr/bin/libreoffice"), 1);
+        let input = Path::new("non_existent.docx");
+        let output = Path::new("output.pdf");
+
+        let result = converter.convert_to_pdf(input, output).await;
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Input file does not exist"));
+    }
+
+    #[tokio::test]
+    async fn test_retry_mechanism_failure() {
+        let converter = DocumentConverter::new(PathBuf::from("/invalid/path"), 1);
+        let temp_dir = tempfile::tempdir().unwrap();
+        let input_path = temp_dir.path().join("input.docx");
+        fs::write(&input_path, "dummy").unwrap();
+
+        let output_path = temp_dir.path().join("output.pdf");
+
+        // This should fail after 2 retries (3 total attempts)
+        let start = std::time::Instant::now();
+        let result = converter
+            .convert_with_retry(&input_path, &output_path, 1)
+            .await;
+        let duration = start.elapsed();
+
+        assert!(result.is_err());
+        // Retry delay is 2^attempts. 1 retry = 2 seconds.
+        assert!(duration.as_secs() >= 2);
+    }
+}

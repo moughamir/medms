@@ -75,3 +75,65 @@ impl WorkflowEngine {
         &self.history
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_workflow_path() {
+        let mut engine = WorkflowEngine::new();
+        assert_eq!(engine.current_state(), DocumentState::Registered);
+
+        engine
+            .transition(DocumentState::Dispatched, "agent1".into(), None)
+            .unwrap();
+        assert_eq!(engine.current_state(), DocumentState::Dispatched);
+
+        engine
+            .transition(
+                DocumentState::Annotated,
+                "agent2".into(),
+                Some("Looks good".into()),
+            )
+            .unwrap();
+        assert_eq!(engine.current_state(), DocumentState::Annotated);
+
+        engine
+            .transition(DocumentState::Signed, "agent3".into(), None)
+            .unwrap();
+        assert_eq!(engine.current_state(), DocumentState::Signed);
+
+        engine
+            .transition(DocumentState::Archived, "agent4".into(), None)
+            .unwrap();
+        assert_eq!(engine.current_state(), DocumentState::Archived);
+
+        assert_eq!(engine.audit_trail().len(), 4);
+        assert_eq!(engine.audit_trail()[1].agent_id, "agent2");
+        assert_eq!(
+            engine.audit_trail()[1].notes.as_ref().unwrap(),
+            "Looks good"
+        );
+    }
+
+    #[test]
+    fn test_invalid_transitions() {
+        let mut engine = WorkflowEngine::new();
+
+        // Cannot skip Dispatched
+        let res = engine.transition(DocumentState::Annotated, "agent1".into(), None);
+        assert!(res.is_err());
+
+        // Cannot go backwards (e.g., from Dispatched to Registered)
+        engine
+            .transition(DocumentState::Dispatched, "agent1".into(), None)
+            .unwrap();
+        let res = engine.transition(DocumentState::Registered, "agent1".into(), None);
+        assert!(res.is_err());
+
+        // Cannot transition to self
+        let res = engine.transition(DocumentState::Dispatched, "agent1".into(), None);
+        assert!(res.is_err());
+    }
+}

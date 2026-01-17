@@ -132,10 +132,7 @@ mod tests {
     #[test]
     fn test_totp_window() {
         let totp = TotpSecret::generate("Test", "user@example.com").unwrap();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let now = 1700000000u64; // Fixed timestamp for reproducibility
 
         let code_past = totp.generate_code(Some(now - 30)).unwrap();
         let code_now = totp.generate_code(Some(now)).unwrap();
@@ -144,5 +141,24 @@ mod tests {
         assert!(totp.verify_code(&code_past, Some(now)).unwrap());
         assert!(totp.verify_code(&code_now, Some(now)).unwrap());
         assert!(totp.verify_code(&code_future, Some(now)).unwrap());
+
+        // Out of window
+        let code_too_far = totp.generate_code(Some(now - 61)).unwrap();
+        assert!(!totp.verify_code(&code_too_far, Some(now)).unwrap());
+    }
+
+    #[test]
+    fn test_invalid_code() {
+        let totp = TotpSecret::generate("Test", "user@example.com").unwrap();
+        assert!(!totp.verify_code("123456", Some(1700000000)).unwrap());
+        assert!(!totp.verify_code("abcdef", Some(1700000000)).unwrap());
+        assert!(!totp.verify_code("123", Some(1700000000)).unwrap());
+    }
+
+    #[test]
+    fn test_constant_time_eq() {
+        assert!(constant_time_eq(b"password", b"password"));
+        assert!(!constant_time_eq(b"password", b"passworD"));
+        assert!(!constant_time_eq(b"password", b"pass"));
     }
 }

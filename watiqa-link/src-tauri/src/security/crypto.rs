@@ -10,7 +10,10 @@ pub struct CryptEngine {
 
 impl CryptEngine {
     pub fn new() -> AppResult<Self> {
-        let key_path = PathBuf::from("../store/master.key");
+        Self::with_path(PathBuf::from("../store/master.key"))
+    }
+
+    pub fn with_path(key_path: PathBuf) -> AppResult<Self> {
         let key_bytes = if key_path.exists() {
             fs::read(&key_path)?
         } else {
@@ -18,7 +21,9 @@ impl CryptEngine {
             SystemRandom::new()
                 .fill(&mut bytes)
                 .map_err(|_| AppError::Crypto("Key generation failed".into()))?;
-            fs::create_dir_all(key_path.parent().unwrap())?;
+            if let Some(parent) = key_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
             fs::write(&key_path, &bytes)?;
             bytes
         };
@@ -75,12 +80,33 @@ mod tests {
 
     #[test]
     fn test_encryption_decryption() {
-        // We might need to handle the store directory in tests differently
-        // But for local dev it's fine.
-        let engine = CryptEngine::new().unwrap();
-        let original = "secret key 123";
+        let temp_dir = tempfile::tempdir().unwrap();
+        let key_path = temp_dir.path().join("master.key");
+
+        let engine = CryptEngine::with_path(key_path).unwrap();
+        let original = "secret message 123";
         let encrypted = engine.encrypt(original).unwrap();
         let decrypted = engine.decrypt(&encrypted).unwrap();
+
+        assert_eq!(original, decrypted);
+        assert_ne!(original, encrypted);
+    }
+
+    #[test]
+    fn test_persistence() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let key_path = temp_dir.path().join("master.key");
+
+        {
+            let engine = CryptEngine::with_path(key_path.clone()).unwrap();
+            let _ = engine.encrypt("test").unwrap();
+        }
+
+        // Should reload same key
+        let engine2 = CryptEngine::with_path(key_path).unwrap();
+        let original = "consistent";
+        let encrypted = engine2.encrypt(original).unwrap();
+        let decrypted = engine2.decrypt(&encrypted).unwrap();
         assert_eq!(original, decrypted);
     }
 }
