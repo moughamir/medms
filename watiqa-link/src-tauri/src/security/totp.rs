@@ -48,6 +48,7 @@ impl TotpSecret {
         )
     }
 
+    #[allow(dead_code)]
     pub fn generate_code(&self, time: Option<u64>) -> Result<String> {
         let timestamp = time.unwrap_or_else(|| {
             std::time::SystemTime::now()
@@ -75,12 +76,7 @@ impl TotpSecret {
             let expected_code = self.generate_hotp(counter)?;
 
             // Use constant-time comparison to prevent timing attacks
-            if ring::constant_time::verify_slices_are_equal(
-                expected_code.as_bytes(),
-                code.as_bytes(),
-            )
-            .is_ok()
-            {
+            if constant_time_eq(expected_code.as_bytes(), code.as_bytes()) {
                 return Ok(true);
             }
         }
@@ -110,9 +106,17 @@ impl TotpSecret {
     }
 }
 
-// Helper trait to emulate into_result for easier unwrap_or_else usage if desired,
-// but let's just use match or if let for clarity if possible.
-// Actually, let's keep it simple.
+// Constant-time byte slice comparison to prevent timing attacks.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut result = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        result |= x ^ y;
+    }
+    result == 0
+}
 
 #[cfg(test)]
 mod tests {

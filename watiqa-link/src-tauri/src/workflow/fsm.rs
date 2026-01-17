@@ -65,10 +65,12 @@ impl WorkflowEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn current_state(&self) -> DocumentState {
         self.current_state
     }
 
+    #[allow(dead_code)]
     pub fn audit_trail(&self) -> &[StateTransition] {
         &self.history
     }

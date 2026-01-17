@@ -5,12 +5,14 @@ use thiserror::Error;
 #[serde(tag = "type", content = "message")]
 pub enum AppError {
     #[error("Database error: {0}")]
+    #[allow(dead_code)]
     Database(String),
 
     #[error("Crypto error: {0}")]
     Crypto(String),
 
     #[error("Authentication error: {0}")]
+    #[allow(dead_code)]
     Auth(String),
 
     #[error("IO error: {0}")]
@@ -24,6 +26,7 @@ pub enum AppError {
 }
 
 impl From<sqlx::Error> for AppError {
+    #[allow(dead_code)]
     fn from(err: sqlx::Error) -> Self {
         AppError::Database(err.to_string())
     }
