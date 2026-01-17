@@ -52,8 +52,8 @@ impl TotpSecret {
         let timestamp = time.unwrap_or_else(|| {
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
+                .map(|d| d.as_secs())
+                .unwrap_or(0)
         });
 
         let counter = timestamp / self.period;
@@ -64,15 +64,23 @@ impl TotpSecret {
         let timestamp = time.unwrap_or_else(|| {
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
+                .map(|d| d.as_secs())
+                .unwrap_or(0)
         });
 
         let current_counter = (timestamp / self.period) as i64;
 
         for offset in -VALIDATION_WINDOW..=VALIDATION_WINDOW {
             let counter = (current_counter + offset) as u64;
-            if self.generate_hotp(counter)? == code {
+            let expected_code = self.generate_hotp(counter)?;
+
+            // Use constant-time comparison to prevent timing attacks
+            if ring::constant_time::verify_slices_are_equal(
+                expected_code.as_bytes(),
+                code.as_bytes(),
+            )
+            .is_ok()
+            {
                 return Ok(true);
             }
         }
@@ -101,6 +109,10 @@ impl TotpSecret {
         Ok(format!("{:0width$}", otp, width = self.digits as usize))
     }
 }
+
+// Helper trait to emulate into_result for easier unwrap_or_else usage if desired,
+// but let's just use match or if let for clarity if possible.
+// Actually, let's keep it simple.
 
 #[cfg(test)]
 mod tests {
