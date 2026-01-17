@@ -47,7 +47,7 @@ impl DocumentConverter {
             .parent()
             .context("Output path must have a parent directory")?;
 
-        let output = Command::new(&self.libreoffice_path)
+        let output_future = Command::new(&self.libreoffice_path)
             .args(&[
                 "--headless",
                 "--convert-to",
@@ -60,9 +60,11 @@ impl DocumentConverter {
                     .to_str()
                     .context("Input file path is not valid UTF-8")?,
             ])
-            .output()
+            .output();
+
+        let output = tokio::time::timeout(std::time::Duration::from_secs(30), output_future)
             .await
-            .context("Failed to execute LibreOffice")?;
+            .context("LibreOffice conversion timed out")??;
 
         if !output.status.success() {
             return Err(anyhow::anyhow!(
