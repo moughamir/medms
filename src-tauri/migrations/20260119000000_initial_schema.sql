@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS inspections (
   report_number TEXT NOT NULL UNIQUE,
   -- PV Number e.g. 2024/001
   summary TEXT,
-  status TEXT DEFAULT 'draft',
+  status TEXT NOT NULL DEFAULT 'draft',
   -- draft, submitted, archived
   FOREIGN KEY (commerce_id) REFERENCES commerces(id),
   FOREIGN KEY (inspector_id) REFERENCES users(id)
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS violations (
   inspection_id TEXT NOT NULL,
   violation_code TEXT NOT NULL,
   description TEXT,
-  severity TEXT DEFAULT 'medium',
+  severity TEXT NOT NULL DEFAULT 'medium',
   -- low, medium, high, critical
   measure_taken TEXT,
   -- warning, fine, closure

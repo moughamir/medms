@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useInspectionStore } from '../stores/inspectionStore';
+import { useInspectionStore, CreateViolation } from '../stores/inspectionStore';
 import { useCommerceStore } from '../stores/commerceStore';
 import { ChevronRight, ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { CreateViolation } from '../stores/inspectionStore';
 
 const ViolationForm = ({ onAdd, onCancel }: { onAdd: (v: CreateViolation) => void, onCancel: () => void }) => {
   const [code, setCode] = useState('');
@@ -60,7 +59,7 @@ const ViolationForm = ({ onAdd, onCancel }: { onAdd: (v: CreateViolation) => voi
 
 export const NewInspectionPage = () => {
   const navigate = useNavigate();
-  const { createInspection, addViolation } = useInspectionStore();
+  const { createInspection, addViolation, isLoading } = useInspectionStore();
   const { commerces, fetchCommerces } = useCommerceStore();
 
   const [step, setStep] = useState(1);
@@ -72,7 +71,11 @@ export const NewInspectionPage = () => {
 
   useEffect(() => {
     fetchCommerces();
-  }, []);
+    // Pre-fill report number with date ??
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    setReportNumber(`${new Date().getFullYear()}/${randomSuffix}`);
+  }, [fetchCommerces]);
 
   const handleNext = () => {
     if (step === 1 && !selectedCommerce) return;
@@ -84,10 +87,10 @@ export const NewInspectionPage = () => {
 
   const handleSubmit = async () => {
     // 1. Create Inspection
-    // Fake inspector ID for now
+    // ID 123e4567-e89b-12d3-a456-426614174000 is a placeholder until Auth is fully linked
     const inspection = await createInspection({
       commerce_id: selectedCommerce,
-      inspector_id: '123e4567-e89b-12d3-a456-426614174000', // To be replaced by auth
+      inspector_id: '123e4567-e89b-12d3-a456-426614174000',
       report_number: reportNumber,
       summary
     });
@@ -216,10 +219,15 @@ export const NewInspectionPage = () => {
         ) : (
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-200"
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-200 disabled:opacity-70"
           >
-            <Save size={20} />
-            <span>حفظ المحضر</span>
+            {isLoading ? <span>جاري الحفظ...</span> : (
+              <>
+                <Save size={20} />
+                <span>حفظ المحضر</span>
+              </>
+            )}
           </button>
         )}
       </div>

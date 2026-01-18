@@ -41,6 +41,7 @@ interface InspectionState {
   isLoading: boolean;
   error: string | null;
   fetchInspections: (commerceId: string) => Promise<void>;
+  fetchRecentInspections: () => Promise<void>;
   createInspection: (data: CreateInspection) => Promise<Inspection | null>;
   fetchViolations: (inspectionId: string) => Promise<void>;
   addViolation: (data: CreateViolation) => Promise<void>;
@@ -62,12 +63,27 @@ export const useInspectionStore = create<InspectionState>((set, get) => ({
     }
   },
 
+  fetchRecentInspections: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const inspections = await invoke<Inspection[]>('list_recent_inspections');
+      set({ inspections, isLoading: false });
+    } catch (err) {
+      set({ error: err as string, isLoading: false });
+    }
+  },
+
   createInspection: async (data) => {
     set({ isLoading: true, error: null });
     try {
       const inspection = await invoke<Inspection>('create_inspection', { data });
-      // We don't necessarily update a list here as this might be in a different context
-      set({ isLoading: false });
+      // Update inspections list if we are in recent view or same commerce view
+      // Ideally we prepend it, but depending on the view filter it might not belong.
+      // For now, let's just prepend it to keep UI responsive.
+      set(state => ({
+        inspections: [inspection, ...state.inspections],
+        isLoading: false
+      }));
       return inspection;
     } catch (err) {
       set({ error: err as string, isLoading: false });

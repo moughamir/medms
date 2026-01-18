@@ -21,7 +21,6 @@ lerna-debug.log*
 store/
 src-tauri/watiqa.db
 src-tauri/gen/schemas
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
