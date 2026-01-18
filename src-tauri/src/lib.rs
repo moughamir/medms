@@ -1,3 +1,14 @@
+pub mod commands;
+pub mod db;
+pub mod document;
+pub mod error;
+pub mod models;
+pub mod security;
+pub mod templates;
+pub mod workflow;
+
+use tauri::Manager;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -8,7 +19,19 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            tauri::async_runtime::block_on(async {
+                let db = db::init_db(app.handle()).await.expect("failed to init db");
+                app.manage(db);
+            });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            commands::auth::setup_totp,
+            commands::auth::verify_totp,
+            commands::documents::generate_police_document
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
