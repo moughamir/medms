@@ -44,4 +44,16 @@ impl From<anyhow::Error> for AppError {
     }
 }
 
+impl From<tauri::Error> for AppError {
+    fn from(err: tauri::Error) -> Self {
+        AppError::Internal(err.to_string())
+    }
+}
+
+impl From<sqlx::migrate::MigrateError> for AppError {
+    fn from(err: sqlx::migrate::MigrateError) -> Self {
+        AppError::Database(err.to_string())
+    }
+}
+
 pub type AppResult<T> = Result<T, AppError>;

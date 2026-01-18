@@ -18,12 +18,21 @@ fn greet(name: &str) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async {
                 let db = db::init_db(app.handle()).await.expect("failed to init db");
                 app.manage(db);
             });
+
+            // Initialize optimized document converter
+            let converter = document::converter::DocumentConverter::new(
+                std::path::PathBuf::from("/usr/bin/libreoffice"),
+                4,
+            );
+            app.manage(converter);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -35,7 +44,12 @@ pub fn run() {
             commands::commerce::list_commerces,
             commands::commerce::get_commerce,
             commands::commerce::update_commerce,
-            commands::commerce::delete_commerce
+            commands::commerce::delete_commerce,
+            commands::inspection::create_inspection,
+            commands::inspection::list_inspections_by_commerce,
+            commands::inspection::list_recent_inspections,
+            commands::inspection::add_violation,
+            commands::inspection::list_violations
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
