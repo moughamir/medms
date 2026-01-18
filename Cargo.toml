@@ -1,5 +1,5 @@
 [workspace]
 resolver = "2"
 members = [
-    "watiqa-link/src-tauri"
+    "src-tauri"
 ]

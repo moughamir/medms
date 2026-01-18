@@ -1,74 +1,73 @@
-# Moroccan Administrative Documents Generator - Build Tools
+# Watiqa-Link - Build Tools
 
-.PHONY: all build build-release build-linux build-windows clean test lint run run-cli help
+.PHONY: all help install dev build build-linux build-windows clean test lint fmt check docs
 
 # Default target
-all: build
+all: dev
 
-# Development build
+#==============================================================================
+# DEVELOPMENT
+#==============================================================================
+
+# Install dependencies
+install:
+	pnpm install
+
+# Run in development mode
+dev:
+	pnpm tauri dev
+
+# Build for production
 build:
-	cargo build
+	pnpm tauri build
 
-# Release build
-build-release:
-	cargo build --release
-
-# Linux release build
+# Build for Linux
 build-linux:
-	cargo build --release --target x86_64-unknown-linux-gnu
-	@echo "Linux binary: target/x86_64-unknown-linux-gnu/release/moroccan_docs"
+	pnpm tauri build --target x86_64-unknown-linux-gnu
+	@echo "Linux bundle: src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/"
 
-# Windows cross-compilation (requires mingw-w64)
-# Install: sudo apt install mingw-w64 (Debian/Ubuntu)
-#          sudo pacman -S mingw-w64-gcc (Arch)
+# Build for Windows (cross-compile)
 build-windows:
 	@echo "Checking Windows target..."
 	rustup target add x86_64-pc-windows-gnu 2>/dev/null || true
-	cargo build --release --target x86_64-pc-windows-gnu
-	@echo "Windows binary: target/x86_64-pc-windows-gnu/release/moroccan_docs.exe"
+	pnpm tauri build --target x86_64-pc-windows-gnu
+	@echo "Windows bundle: src-tauri/target/x86_64-pc-windows-gnu/release/bundle/"
 
-# Build all platforms
-release: build-linux build-windows
-	@mkdir -p dist/linux dist/windows
-	@cp target/x86_64-unknown-linux-gnu/release/moroccan_docs dist/linux/ 2>/dev/null || \
-		cp target/release/moroccan_docs dist/linux/
-	@cp target/x86_64-pc-windows-gnu/release/moroccan_docs.exe dist/windows/ 2>/dev/null || \
-		echo "Windows build not available"
-	@echo "Release binaries in dist/"
+#==============================================================================
+# QUALITY
+#==============================================================================
 
 # Clean build artifacts
 clean:
-	cargo clean
-	rm -rf dist/
+	cd src-tauri && cargo clean
+	rm -rf dist
+	rm -rf node_modules/.vite
 
-# Run tests
+# Run Rust tests
 test:
-	cargo test
+	cd src-tauri && cargo test
 
-# Run lints
+# Run lints (Rust + TypeScript)
 lint:
-	cargo clippy -- -D warnings
-	cargo fmt --check
+	cd src-tauri && cargo clippy -- -D warnings
+	cd src-tauri && cargo fmt --check
+	pnpm exec tsc --noEmit
 
 # Format code
 fmt:
-	cargo fmt
-
-# Run the GUI application
-run:
-	cargo run --release
-
-# Run in CLI mode
-run-cli:
-	cargo run --release -- --cli
+	cd src-tauri && cargo fmt
 
 # Check for compilation errors
 check:
-	cargo check
+	cd src-tauri && cargo check
 
-# Generate documentation
+# Generate Rust documentation
 docs:
-	cargo doc --no-deps --open
+	cd src-tauri && cargo doc --no-deps --open
+
+#==============================================================================
+# SETUP
+#==============================================================================
 
 # Install Windows cross-compilation dependencies (Arch Linux)
 setup-windows-cross:
@@ -79,23 +78,25 @@ setup-windows-cross:
 
 # Help
 help:
-	@echo "Moroccan Administrative Documents Generator - Build Commands"
+	@echo "Watiqa-Link - Build Commands"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
-	@echo "Targets:"
-	@echo "  build          - Development build"
-	@echo "  build-release  - Release build"
-	@echo "  build-linux    - Linux release build"
-	@echo "  build-windows  - Windows cross-compilation"
-	@echo "  release        - Build all platforms"
-	@echo "  clean          - Clean build artifacts"
-	@echo "  test           - Run tests"
-	@echo "  lint           - Run clippy and format check"
-	@echo "  fmt            - Format code"
-	@echo "  run            - Run GUI application"
-	@echo "  run-cli        - Run CLI mode"
-	@echo "  check          - Check for errors"
-	@echo "  docs           - Generate documentation"
+	@echo "=== Development ==="
+	@echo "  install       - Install pnpm dependencies"
+	@echo "  dev           - Run in development mode"
+	@echo "  build         - Build for production"
+	@echo "  build-linux   - Build for Linux"
+	@echo "  build-windows - Build for Windows (cross-compile)"
+	@echo ""
+	@echo "=== Quality ==="
+	@echo "  clean         - Clean build artifacts"
+	@echo "  test          - Run Rust tests"
+	@echo "  lint          - Run lints (Rust + TypeScript)"
+	@echo "  fmt           - Format Rust code"
+	@echo "  check         - Check for compilation errors"
+	@echo "  docs          - Generate Rust documentation"
+	@echo ""
+	@echo "=== Setup ==="
 	@echo "  setup-windows-cross - Install Windows cross-compile deps"
-	@echo "  help           - Show this help"
+	@echo "  help          - Show this help"

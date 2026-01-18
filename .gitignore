@@ -1,26 +1,15 @@
 # Rust
-./**/target
-./**/debug
-./**/Cargo.lock
+target/
+debug/
 
-# IDEs and OS
-.idea/
-.vscode/
-.DS_Store
-*.pdb
-*.rs.bk
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
 
-# Application Data
-./**/store/*.xlsx
-store/documents/
-!store/.gitkeep
-watiqa-link/src-tauri/target
-watiqa-link/src-tauri/debug
-watiqa-link/src-tauri/Cargo.toml
-watiqa-link/src-tauri/watiqa.db
-watiqa-link/src-tauri/*.rs.bk
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -28,35 +17,37 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Application Data
+store/
+src-tauri/watiqa.db
+src-tauri/gen/schemas
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.pdb
+*.rs.bk
+
+# Build artifacts
 Cargo.lock
-target
-store
+
+# Android (Tauri mobile)
+src-tauri/gen/android/.gradle
+src-tauri/gen/android/*.iml
+src-tauri/gen/android/local.properties
+src-tauri/gen/android/.idea/
+src-tauri/gen/android/build/
+src-tauri/gen/android/.cxx/
+
+# Misc
 repomix-output.xml
-watiqa-link/src-tauri/gen/android/.gradle
-watiqa-link/src-tauri/gen/android/*.iml
-watiqa-link/src-tauri/gen/android/local.properties
-watiqa-link/src-tauri/gen/android/.idea/caches
-watiqa-link/src-tauri/gen/android/.idea/libraries
-watiqa-link/src-tauri/gen/android/.idea/modules.xml
-watiqa-link/src-tauri/gen/android/.idea/workspace.xml
-watiqa-link/src-tauri/gen/android/.idea/navEditor.xml
-watiqa-link/src-tauri/gen/android/.idea/assetWizardSettings.xml
-watiqa-link/src-tauri/gen/android/build
-watiqa-link/src-tauri/gen/android/.cxx
-watiqa-link/src-tauri/target
-watiqa-link/src-tauri/gen/schemas

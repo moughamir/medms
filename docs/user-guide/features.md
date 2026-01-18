@@ -1,32 +1,27 @@
-# Features & Workflow
+# Features
 
-## Localization
-- The application supports **Arabic**, **French**, and a **Bilingual (Arabic/French)** mode.
-- Change the language in **Settings**.
-- The interface handles Arabic text reshaping and Right-to-Left (RTL) display automatically.
+## Core Security
 
-## Commerces (Businesses)
-- **Commerce Selector**: Quickly search and select existing businesses using the smart dropdown widget.
-- **Quick Create**: Seamlessly add a new commerce if it doesn't exist during an inspection or document creation.
-- **Database**: All data is stored in `police_administrative.xlsx`.
+- **TOTP Authentication**: Secure, standards-compliant Time-based One-Time Password system.
+- **Offline First**: All security keys and data are stored locally.
+- **Backup Codes**: Emergency access recovery system.
 
-## Inspections
-- **New Inspection**: Select a commerce (using the Selector) and record a violation.
-- **Violations**: Choose from a predefined list of violations (e.g., "Sans Autorisation", "Hygiène").
-- **Evidence**: Add descriptions and measures taken.
+## Planned Features (Roadmap)
 
-## Documents
-- **Generate**: Create official Word documents (`.docx`) directly from the GUI.
-- **Logo Integration**: All documents are generated with the Kingdom of Morocco logo and your administration's header.
-- **Open Externally**: Quickly open generated files or the documents folder (`docs/`) from the registry view.
-- **Types**:
-    - Procès-Verbal (PV) / Report
-    - Avertissement / Warning
-    - Mise en Demeure / Formal Notice
-    - Fermeture / Closure Order
-- **Templates**: Documents are generated using official templates.
+The following modules are currently under development for the Watiqa-Link platform:
 
-## Settings
-- Update your commune/arrondissement details.
-- Change the color theme (Light/Dark).
-- Update the database path.
+### Document Management
+
+- **Automated Generation**: Create official Arabic `.docx` documents from templates.
+- **Template Engine**: Dynamic placeholder substitution for names, dates, and locations.
+
+### Administrative Workflow
+
+- **Commerce Registry**: Database of local businesses.
+- **Inspection Reports**: Digital entry for "Procès-Verbal" and field reports.
+- **Violations Database**: Standardized list of administrative infractions.
+
+### User Interface
+
+- **Bilingual Dashboard**: Full support for Arabic and French interfaces.
+- **Dark Mode**: Optimized themes for various lighting conditions.

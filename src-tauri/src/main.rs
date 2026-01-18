@@ -13,6 +13,7 @@ use commands::documents::generate_police_document;
 use document::converter::DocumentConverter;
 use sqlx::sqlite::SqlitePoolOptions;
 use std::fs;
+use std::str::FromStr;
 
 fn main() -> anyhow::Result<()> {
     // 1. Initialize Runtime for async tasks during setup
@@ -36,9 +37,12 @@ fn main() -> anyhow::Result<()> {
 
     // 3. Initialize database pool
     let pool = rt.block_on(async {
+        let options =
+            sqlx::sqlite::SqliteConnectOptions::from_str(&db_url)?.create_if_missing(true);
+
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
-            .connect(&db_url)
+            .connect_with(options)
             .await
             .context("Failed to connect to database")?;
 

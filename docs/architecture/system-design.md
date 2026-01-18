@@ -1,40 +1,61 @@
 # System Design
 
 ## Overview
-The **Moroccan Administrative Documents Generator** is a Rust-based desktop application designed for high performance, portability, and offline capability.
+
+**Watiqa-Link** is a modern document management system for Moroccan municipal administration. It is built as a hybrid desktop application using **Tauri**, combining the performance and security of **Rust** with the rich user interface capabilities of **React**.
 
 ## Technology Stack
+
+### Frontend (User Interface)
+
+- **Framework**: React 18 + TypeScript
+- **Styling**: Tailwind CSS v4 (with RTL support)
+- **Build Tool**: Vite
+- **Icons**: Heroicons / custom SVG assets
+
+### Backend (Core Logic)
+
+- **Runtime**: Tauri v2
 - **Language**: Rust (2021 Edition)
-- **GUI Framework**: `egui` with `eframe` (Immediate Mode GUI).
-- **Storage**: Excel (`.xlsx`) via `calamine` (read) and `rust_xlsxwriter` (write).
-- **Document Generation**: `docx-rs` for data-driven Microsoft Word generation with embedded assets (Logos).
-- **Localization**: Custom `Translator` struct with `arabic_reshaper` + `unicode-bidi` for correct text rendering.
+- **Database**: SQLite (via `sqlx`)
+- **Authentication**: TOTP (Time-based One-Time Password) using `ring`
 
-## Architecture Patterns
-The application follows a modular architecture:
+## Architecture
 
-### 1. Presentation Layer (`src/gui/`)
-- **`app.rs`**: Main entry point and state manager.
-- **`views/`**: Individual screens (Dashboard, Commerce, Inspection, Settings, Onboarding, Documents).
-- **`widgets/`**: Reusable components (e.g., `CommerceSelector`).
-- **`localization.rs`**: Handles string translation and shaping.
-- **`text_utils.rs`**: Utilities for BiDi text processing.
+The application follows the Tauri multi-process architecture:
 
-### 2. Domain Layer (`src/models/`)
-- Defines core data structures: `CommerceInfo`, `InspectionRecord`, `DashboardStats`.
-- Enums for `ViolationType`, `DocumentType`.
+### 1. Core Process (Rust)
 
-### 3. Data Layer (`src/database/`)
-- **`excel.rs`**: Encapsulates all Excel I/O operations.
-- Implements a flat-file database pattern where the Excel file serves as the source of truth.
+Responsible for system-level operations, security, and data persistence.
+
+- **`src-tauri/src/main.rs`**: Application entry point.
+- **`lib.rs`**: Core library logic.
+- **`commands/`**: Exposed functions callable from the frontend (e.g., `setup_totp`, `verify_totp`).
+- **`db.rs`**: Database connection and migration management.
+
+### 2. WebView Process (Frontend)
+
+Responsible for the user interface and presentation logic.
+
+- **`src/`**: React application source.
+- **`src/pages/`**: Application views (e.g., `TotpSetup.tsx`).
+- **`src/stores/`**: Client-side state management (Zustand).
 
 ## Data Flow
-1. **User Action**: User submits a form (e.g., New Commerce).
-2. **State Update**: GUI state captures input.
-3. **Database Write**: `ExcelDatabase` appends a row to the respective sheet in `police_administrative.xlsx`.
-4. **Refetch**: Dashboard stats are recalculated by scanning the updated file.
+
+1. **User Interaction**: User performs an action in the React UI.
+2. **IPC Call**: Frontend calls a Rust command via `@tauri-apps/api/core`'s `invoke()`.
+3. **Core Processing**: Rust backend processes the request (validates input, queries DB).
+4. **Response**: Rust returns a serialized response (JSON) to the frontend.
+5. **UI Update**: Frontend updates state and re-renders.
+
+## Security Features
+
+- **OTP Authentication**: 2FA-only access model (no static passwords).
+- **Constant-Time Comparison**: Prevents timing attacks during code verification.
+- **Secure Storage**: Sensitive secrets are handled within the Rust memory space; database is local SQLite.
 
 ## Cross-Platform Support
-- Designed for **Linux** and **Windows**.
-- Uses `winapi` for Windows-specific optimizations (if needed).
-- Embeds fonts (`NotoSansArabic`) to ensure consistent rendering across OSs.
+
+- **Primary Targets**: Linux, Windows.
+- **Localization**: Native support for Arabic (RTL) and French (LTR).

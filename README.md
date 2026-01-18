@@ -1,62 +1,81 @@
-# Moroccan Administrative Documents Generator
+# Watiqa-Link
 
 ![Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)
+![Tauri](https://img.shields.io/badge/tauri-v2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-A Rust-based application designed to automate the generation and management of administrative documents for municipal administrative police in Morocco.
+A Tauri-based desktop application for managing administrative documents in Moroccan municipal governments.
 
 ## Overview
 
-This system facilitates the creation of various official documents such as:
-- **Procès-Verbal** (Inspection report)
-- **Avertissement** (Warning)
-- **Mise en Demeure** (Formal notice)
-- **Décision de Fermeture** (Closure decision)
-- **Amende** (Fine)
+Watiqa-Link is a bilingual (Arabic/French) document management system designed for municipal administrative police. It provides:
 
-The application provides both a Command-Line Interface (CLI) and a Graphical User Interface (GUI) to collect information about commercial establishments, inspections, and enforcement actions. Data is stored in an Excel database (`police_administrative.xlsx`) and documents are generated in `.docx` format.
+- **TOTP Authentication**: Secure two-factor authentication with QR code setup
+- **Document Generation**: Automated creation of Arabic `.docx` documents from templates
+- **Document Tracking**: Full state machine with audit trail (Registered → Dispatched → Annotated → Signed → Archived)
+- **Offline-First**: All features work without network connectivity
 
-## Features
+### Supported Documents
 
-- **Document Generation**: Automated creation of Arabic `.docx` documents from templates.
-- **Data Management**: centralized Excel-based record-keeping using `rust_xlsxwriter` and `calamine`.
-- **Bilingual Interface**: Focus on Arabic for document content and administrative requirements.
-- **Modular Architecture**: Clean separation of models, document generation logic, and UI.
-- **Cross-platform**: Supports Linux and Windows targets.
+- **Procès-Verbal** (Inspection report / محضر معاينة)
+- **Avertissement** (Warning / إنذار)
+- **Mise en Demeure** (Formal notice / إعذار)
+- **Décision de Fermeture** (Closure decision / قرار الإغلاق)
+- **Amende** (Fine / غرامة)
 
 ## Technology Stack
 
-- **Language**: Rust (Edition 2021)
-- **UI**: `egui`/`eframe`
-- **Excel**: `rust_xlsxwriter`, `calamine`
-- **Word**: `docx-rs`
-- **Utilities**: `chrono`, `uuid`, `serde`, `tracing`
+- **Backend**: Rust with Tauri v2
+- **Frontend**: React + TypeScript + Tailwind CSS
+- **Database**: SQLite with SQLx
+- **Build**: Vite
 
 ## Getting Started
 
 ### Prerequisites
 
 - Rust toolchain (v1.70+)
-- Build tools (`gcc`, `pkg-config`, etc., depending on your OS)
+- Node.js (v18+)
+- pnpm
 
 ### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/your-repo/moroccan_docs.git
 cd moroccan_docs
-cargo build --release
+
+# Install dependencies
+pnpm install
+
+# Run in development mode
+pnpm tauri dev
 ```
 
-### Usage
+### Build for Production
 
-To run the application:
 ```bash
-cargo run --release
+pnpm tauri build
+```
+
+## Make Commands
+
+```bash
+make install   # Install pnpm dependencies
+make dev       # Run in development mode
+make build     # Build for production
+make test      # Run Rust tests
+make lint      # Run lints (Rust + TypeScript)
+make help      # Show all commands
 ```
 
 ## Documentation
 
-Extended documentation can be found in the [`docs/`](./docs) directory.
+Extended documentation is available in the [`docs/`](./docs) directory:
+
+- [`docs/architecture/`](./docs/architecture/) - System design and module structure
+- [`docs/api/`](./docs/api/) - API reference
+- [`docs/user-guide/`](./docs/user-guide/) - End-user guides
 
 ## Contributing
 
