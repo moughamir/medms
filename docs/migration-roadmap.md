@@ -8,21 +8,21 @@ This document outlines the systematic plan to migrate functionality from the leg
 
 **Goal**: Replace Excel persistence with a robust SQLite database.
 
-- [ ] **Schema Design**: Define tables for `users`, `commerces`, `inspections`, `violations`.
-- [ ] **Migrations**: Create SQLx migration files (`migrations/YYYYMMDD_create_tables.sql`).
-- [ ] **Rust Models**: Create structs in `src-tauri/src/models/` mirroring the database schema.
-- [ ] **Database Manager**: Implement `db.rs` to handle connection pooling and query execution.
+- [x] **Schema Design**: Define tables for `users`, `commerces`, `inspections`, `violations`.
+- [x] **Migrations**: Create SQLx migration files (`migrations/YYYYMMDD_create_tables.sql`).
+- [x] **Rust Models**: Create structs in `src-tauri/src/models/` mirroring the database schema.
+- [x] **Database Manager**: Implement `db.rs` to handle connection pooling and query execution.
 
 ## Phase 2: Commerce Module 🏪
 
 **Goal**: Enable business administrative management.
 
-- [ ] **Backend**:
+- [x] **Backend**:
   - `create_commerce(Commerce)`
   - `get_commerce(uuid)`
   - `list_commerces(filter)`
   - `update_commerce(Commerce)`
-- [ ] **Frontend**:
+- [x] **Frontend**:
   - `CommerceList.tsx`: Data table with search/filter.
   - `CommerceForm.tsx`: Form for adding/editing businesses (Bilingual).
   - `CommerceStore`: Zustand store for state management.
