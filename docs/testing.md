@@ -25,7 +25,7 @@ cargo test
 
 Unit tests for UI components and hooks.
 
-### Running Tests
+### Running Frontend Tests
 
 ```bash
 pnpm test
