@@ -1,9 +1,16 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 
+interface User {
+  id: string;
+  username: string;
+  role: string;
+}
+
 interface AuthStore {
   isAuthenticated: boolean;
   username: string | null;
+  user: User | null;
   totpEnabled: boolean;
   login: (username: string, password: string) => Promise<void>;
   verifyTotp: (code: string) => Promise<boolean>;
@@ -13,6 +20,7 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set, get) => ({
   isAuthenticated: false,
   username: null,
+  user: null,
   totpEnabled: false,
 
   login: async (username, _password) => {
@@ -24,19 +32,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const { username } = get();
     if (!username) return false;
 
-    const valid = await invoke<boolean>('verify_totp', {
+    const user = await invoke<User | null>('verify_totp', {
       username,
       code,
     });
 
-    if (valid) {
-      set({ isAuthenticated: true });
+    if (user) {
+      set({ isAuthenticated: true, user });
+      return true;
     }
 
-    return valid;
+    return false;
   },
 
   logout: () => {
-    set({ isAuthenticated: false, username: null });
+    set({ isAuthenticated: false, username: null, user: null });
   },
 }));

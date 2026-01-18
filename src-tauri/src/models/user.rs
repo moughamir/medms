@@ -1,6 +1,6 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use chrono::NaiveDateTime;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct User {
@@ -10,10 +10,10 @@ pub struct User {
     pub password_hash: Option<String>,
     #[serde(skip)]
     pub totp_secret: Option<String>,
-    pub totp_enabled: bool,
+    pub totp_enabled: Option<bool>,
     #[serde(skip)]
     pub backup_codes: Option<String>,
-    pub role: String,
+    pub role: Option<String>,
     pub created_at: Option<NaiveDateTime>,
     pub last_login: Option<NaiveDateTime>,
 }

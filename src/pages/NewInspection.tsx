@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInspectionStore, CreateViolation } from '../stores/inspectionStore';
 import { useCommerceStore } from '../stores/commerceStore';
+import { useAuthStore } from '../stores/authStore';
 import { ChevronRight, ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
 
 const ViolationForm = ({ onAdd, onCancel }: { onAdd: (v: CreateViolation) => void, onCancel: () => void }) => {
@@ -61,6 +62,7 @@ export const NewInspectionPage = () => {
   const navigate = useNavigate();
   const { createInspection, addViolation, isLoading } = useInspectionStore();
   const { commerces, fetchCommerces } = useCommerceStore();
+  const { user } = useAuthStore();
 
   const [step, setStep] = useState(1);
   const [selectedCommerce, setSelectedCommerce] = useState('');
@@ -71,10 +73,13 @@ export const NewInspectionPage = () => {
 
   useEffect(() => {
     fetchCommerces();
-    // Pre-fill report number with date ??
-    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    // Pre-fill report number with YYYYMMDD/random format
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, '0') +
+      now.getDate().toString().padStart(2, '0');
     const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    setReportNumber(`${new Date().getFullYear()}/${randomSuffix}`);
+    setReportNumber(`${dateStr}/${randomSuffix}`);
   }, [fetchCommerces]);
 
   const handleNext = () => {
@@ -90,7 +95,7 @@ export const NewInspectionPage = () => {
     // ID 123e4567-e89b-12d3-a456-426614174000 is a placeholder until Auth is fully linked
     const inspection = await createInspection({
       commerce_id: selectedCommerce,
-      inspector_id: '123e4567-e89b-12d3-a456-426614174000',
+      inspector_id: user?.id || '00000000-0000-0000-0000-000000000000',
       report_number: reportNumber,
       summary
     });
@@ -120,17 +125,83 @@ export const NewInspectionPage = () => {
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm min-h-[400px]">
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold font-arabic">اختيار المحل التجاري</h2>
-            <select
-              className="w-full p-3 border rounded-lg bg-slate-50"
-              value={selectedCommerce}
-              onChange={e => setSelectedCommerce(e.target.value)}
-            >
-              <option value="">اختر محلاً...</option>
-              {commerces.map(c => (
-                <option key={c.id} value={c.id}>{c.name} - {c.owner_name}</option>
-              ))}
-            </select>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold font-arabic">اختيار المحل التجاري</h2>
+              {selectedCommerce && (
+                <button
+                  onClick={() => setSelectedCommerce('')}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-arabic"
+                >
+                  تغيير الاختيار
+                </button>
+              )}
+            </div>
+
+            {!selectedCommerce ? (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="ابحث عن المحل بالاسم، المسير أو الرقم السري..."
+                    className="w-full p-3 pr-10 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-arabic"
+                    onChange={(e) => fetchCommerces(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {commerces.length > 0 ? (
+                    commerces.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedCommerce(c.id)}
+                        className="text-right p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all group flex items-start gap-4"
+                      >
+                        <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-slate-800 mb-1">{c.name}</h3>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium text-slate-700 font-arabic">المسير:</span> {c.owner_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium text-slate-700 font-arabic">البطاقة الوطنية:</span> {c.cin}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium text-slate-700 font-arabic">رقم الضريبة:</span> {c.patente}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-10 text-slate-400 font-arabic">
+                      لا يوجد محل بهذا الاسم
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center animate-in fade-in zoom-in duration-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-blue-900 mb-1">
+                  {commerces.find(c => c.id === selectedCommerce)?.name}
+                </h3>
+                <p className="text-blue-700 font-arabic">تم اختيار المحل بنجاح</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -234,3 +305,4 @@ export const NewInspectionPage = () => {
     </div>
   );
 };
+

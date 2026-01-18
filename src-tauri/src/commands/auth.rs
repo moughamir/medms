@@ -1,6 +1,7 @@
 use crate::error::AppResult;
 use crate::security::crypto::CryptEngine;
 use crate::security::totp::TotpSecret;
+use chrono::NaiveDateTime;
 use serde::Serialize;
 use sqlx::SqlitePool;
 use tauri::State;
@@ -52,26 +53,41 @@ pub async fn verify_totp(
     username: String,
     code: String,
     db: State<'_, SqlitePool>,
-) -> AppResult<bool> {
+) -> AppResult<Option<crate::models::user::User>> {
     let crypto = CryptEngine::new()?;
 
-    let row = sqlx::query!(
-        "SELECT totp_secret FROM users WHERE username = ? AND totp_enabled = 1",
+    let user = sqlx::query_as!(
+        crate::models::user::User,
+        r#"SELECT id, username, password_hash, totp_secret, totp_enabled as "totp_enabled: bool", backup_codes, role, created_at as "created_at: NaiveDateTime", last_login as "last_login: NaiveDateTime" FROM users WHERE username = ? AND totp_enabled = 1"#,
         username
     )
-    .fetch_one(&*db)
+    .fetch_optional(&*db)
     .await?;
 
-    let encrypted_secret = row.totp_secret.unwrap_or_default();
-    let decrypted_secret = crypto.decrypt(&encrypted_secret)?;
+    if let Some(user) = user {
+        let encrypted_secret = user.totp_secret.as_ref().cloned().unwrap_or_default();
+        let decrypted_secret = crypto.decrypt(&encrypted_secret)?;
 
-    let totp = TotpSecret {
-        secret: decrypted_secret,
-        issuer: "Watiqa".to_string(),
-        account: username,
-        digits: 6,
-        period: 30,
-    };
+        let totp = TotpSecret {
+            secret: decrypted_secret,
+            issuer: "Watiqa".to_string(),
+            account: username,
+            digits: 6,
+            period: 30,
+        };
 
-    Ok(totp.verify_code(&code, None)?)
+        if totp.verify_code(&code, None)? {
+            // Update last login
+            sqlx::query!(
+                "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+                user.id
+            )
+            .execute(&*db)
+            .await?;
+
+            return Ok(Some(user));
+        }
+    }
+
+    Ok(None)
 }
