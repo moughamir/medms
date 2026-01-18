@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
   -- JSON array
   role TEXT DEFAULT 'inspector',
   -- admin, inspector
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  last_login TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  last_login TEXT
 );
 -- Create Commerces table (Businesses)
 CREATE TABLE IF NOT EXISTS commerces (
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS commerces (
   patente TEXT,
   -- Tax ID
   activity_type TEXT,
-  status TEXT DEFAULT 'active',
+  status TEXT NOT NULL DEFAULT 'active',
   -- active, closed, suspended
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 -- Create Inspections table (Procès-Verbal)
 CREATE TABLE IF NOT EXISTS inspections (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS inspections (
   -- UUID
   commerce_id TEXT NOT NULL,
   inspector_id TEXT NOT NULL,
-  inspection_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  inspection_date TEXT DEFAULT CURRENT_TIMESTAMP,
   report_number TEXT NOT NULL UNIQUE,
   -- PV Number e.g. 2024/001
   summary TEXT,

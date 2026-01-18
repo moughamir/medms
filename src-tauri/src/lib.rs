@@ -30,7 +30,12 @@ pub fn run() {
             greet,
             commands::auth::setup_totp,
             commands::auth::verify_totp,
-            commands::documents::generate_police_document
+            commands::documents::generate_police_document,
+            commands::commerce::create_commerce,
+            commands::commerce::list_commerces,
+            commands::commerce::get_commerce,
+            commands::commerce::update_commerce,
+            commands::commerce::delete_commerce
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
