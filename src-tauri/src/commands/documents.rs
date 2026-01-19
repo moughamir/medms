@@ -10,8 +10,10 @@ pub async fn generate_police_document(
     converter: State<'_, DocumentConverter>,
 ) -> AppResult<String> {
     // 1. Define paths
-    // TODO: Use a proper app data directory instead of /tmp
-    let output_dir = std::env::temp_dir().join("watiqa_output");
+    // 1. Define paths in Documents/WatiqaLink/Generated
+    let home = dirs::document_dir()
+        .ok_or_else(|| crate::error::AppError::Io("Could not find documents dir".into()))?;
+    let output_dir = home.join("WatiqaLink").join("Generated");
     if !output_dir.exists() {
         std::fs::create_dir_all(&output_dir)?;
     }
@@ -60,4 +62,9 @@ pub async fn generate_police_document(
 
     // 6. Return the path to the PDF
     Ok(pdf_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn open_document_externally(path: String) -> AppResult<()> {
+    open::that(path).map_err(|e| crate::error::AppError::Io(e.to_string()))
 }

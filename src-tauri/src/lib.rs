@@ -2,6 +2,7 @@ pub mod commands;
 pub mod db;
 pub mod document;
 pub mod error;
+pub mod excel;
 pub mod models;
 pub mod security;
 pub mod templates;
@@ -49,7 +50,8 @@ pub fn run() {
             commands::inspection::list_inspections_by_commerce,
             commands::inspection::list_recent_inspections,
             commands::inspection::add_violation,
-            commands::inspection::list_violations
+            commands::inspection::list_violations,
+            commands::export_ledger
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

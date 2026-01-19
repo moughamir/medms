@@ -8,9 +8,15 @@ use uuid::Uuid;
 #[tauri::command]
 pub async fn create_inspection(
     data: CreateInspection,
+    app: tauri::AppHandle,
     db: State<'_, SqlitePool>,
 ) -> AppResult<Inspection> {
-    create_inspection_inner(data, &db).await
+    let inspection = create_inspection_inner(data, &db).await?;
+
+    // SYNC EXCEL LEDGER
+    let _ = crate::excel::ExcelLedger::export_all(&app, &db).await;
+
+    Ok(inspection)
 }
 
 pub async fn create_inspection_inner(
@@ -98,9 +104,15 @@ pub async fn list_inspections_by_commerce_inner(
 #[tauri::command]
 pub async fn add_violation(
     data: CreateViolation,
+    app: tauri::AppHandle,
     db: State<'_, SqlitePool>,
 ) -> AppResult<Violation> {
-    add_violation_inner(data, &db).await
+    let violation = add_violation_inner(data, &db).await?;
+
+    // SYNC EXCEL LEDGER
+    let _ = crate::excel::ExcelLedger::export_all(&app, &db).await;
+
+    Ok(violation)
 }
 
 pub async fn add_violation_inner(data: CreateViolation, pool: &SqlitePool) -> AppResult<Violation> {

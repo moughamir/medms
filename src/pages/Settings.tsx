@@ -1,5 +1,6 @@
 import { useSettingsStore } from '../stores/settingsStore';
-import { Save, Building2, MapPin, Shield } from 'lucide-react';
+import { Save, Building2, MapPin, Shield, FileSpreadsheet } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 
 export const SettingsPage = () => {
   const { organization, updateOrganization } = useSettingsStore();
@@ -9,17 +10,35 @@ export const SettingsPage = () => {
     alert('تم حفظ الإعدادات بنجاح');
   };
 
+  const handleExportLedger = async () => {
+    try {
+      await invoke('export_ledger');
+      alert('تم تحديث سجل Excel بنجاح في مجلد Documents/WatiqaLink');
+    } catch (err) {
+      alert('فشل تصدير السجل: ' + err);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-slate-800 font-arabic">الإعدادات العامة</h1>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 font-arabic font-bold"
-        >
-          <Save size={20} />
-          <span>حفظ التغييرات</span>
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={handleExportLedger}
+            className="flex items-center gap-2 bg-white text-emerald-600 border border-emerald-200 px-6 py-3 rounded-xl hover:bg-emerald-50 transition-all font-arabic font-bold shadow-sm"
+          >
+            <FileSpreadsheet size={20} />
+            <span>تحديث سجل Excel</span>
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 font-arabic font-bold"
+          >
+            <Save size={20} />
+            <span>حفظ التغييرات</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

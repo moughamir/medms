@@ -8,6 +8,7 @@ use uuid::Uuid;
 #[tauri::command]
 pub async fn create_commerce(
     data: CreateCommerce,
+    app: tauri::AppHandle,
     db: State<'_, SqlitePool>,
 ) -> AppResult<Commerce> {
     let id = Uuid::new_v4().to_string();
@@ -40,6 +41,9 @@ pub async fn create_commerce(
     )
     .fetch_one(&*db)
     .await?;
+
+    // SYNC EXCEL LEDGER
+    let _ = crate::excel::ExcelLedger::export_all(&app, &db).await;
 
     Ok(commerce)
 }
@@ -113,6 +117,7 @@ pub async fn get_commerce(id: String, db: State<'_, SqlitePool>) -> AppResult<Co
 pub async fn update_commerce(
     id: String,
     data: CreateCommerce,
+    app: tauri::AppHandle,
     db: State<'_, SqlitePool>,
 ) -> AppResult<Commerce> {
     let commerce = sqlx::query_as!(
@@ -144,14 +149,24 @@ pub async fn update_commerce(
     .fetch_one(&*db)
     .await?;
 
+    // SYNC EXCEL LEDGER
+    let _ = crate::excel::ExcelLedger::export_all(&app, &db).await;
+
     Ok(commerce)
 }
 
 #[tauri::command]
-pub async fn delete_commerce(id: String, db: State<'_, SqlitePool>) -> AppResult<()> {
+pub async fn delete_commerce(
+    id: String,
+    app: tauri::AppHandle,
+    db: State<'_, SqlitePool>,
+) -> AppResult<()> {
     sqlx::query!("DELETE FROM commerces WHERE id = ?", id)
         .execute(&*db)
         .await?;
+
+    // SYNC EXCEL LEDGER
+    let _ = crate::excel::ExcelLedger::export_all(&app, &db).await;
 
     Ok(())
 }
