@@ -15,16 +15,60 @@ pub struct DocumentConverter {
 impl DocumentConverter {
     /// Creates a new DocumentConverter.
     /// `max_concurrent` limits the number of simultaneous LibreOffice processes.
-    pub fn new(libreoffice_path: PathBuf, max_concurrent: usize) -> Self {
+    pub fn new(max_concurrent: usize) -> Self {
         // Allow overriding the path via environment variable
         let path = env::var("LIBREOFFICE_PATH")
             .map(PathBuf::from)
-            .unwrap_or(libreoffice_path);
+            .unwrap_or_else(|_| {
+                Self::find_libreoffice().unwrap_or_else(|| {
+                    #[cfg(target_os = "windows")]
+                    {
+                        PathBuf::from("soffice.exe")
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        PathBuf::from("libreoffice")
+                    }
+                })
+            });
 
         Self {
             libreoffice_path: path,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
         }
+    }
+
+    fn find_libreoffice() -> Option<PathBuf> {
+        #[cfg(target_os = "windows")]
+        {
+            let common_paths = [
+                r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            ];
+            for path in common_paths {
+                let p = PathBuf::from(path);
+                if p.exists() {
+                    return Some(p);
+                }
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            let common_paths = [
+                "/usr/bin/libreoffice",
+                "/usr/bin/soffice",
+                "/usr/local/bin/libreoffice",
+            ];
+            for path in common_paths {
+                let p = PathBuf::from(path);
+                if p.exists() {
+                    return Some(p);
+                }
+            }
+        }
+
+        None
     }
 
     pub async fn convert_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
@@ -128,13 +172,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_converter_init() {
-        let converter = DocumentConverter::new(PathBuf::from("/usr/bin/libreoffice"), 2);
+        let converter = DocumentConverter::new(2);
         assert_eq!(converter.semaphore.available_permits(), 2);
     }
 
     #[tokio::test]
     async fn test_convert_invalid_input() {
-        let converter = DocumentConverter::new(PathBuf::from("/usr/bin/libreoffice"), 1);
+        let converter = DocumentConverter::new(1);
         let input = Path::new("non_existent.docx");
         let output = Path::new("output.pdf");
 
@@ -148,7 +192,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_retry_mechanism_failure() {
-        let converter = DocumentConverter::new(PathBuf::from("/invalid/path"), 1);
+        let converter = DocumentConverter::new(1);
         let temp_dir = tempfile::tempdir().unwrap();
         let input_path = temp_dir.path().join("input.docx");
         fs::write(&input_path, "dummy").unwrap();

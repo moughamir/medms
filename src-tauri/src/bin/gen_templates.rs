@@ -1,6 +1,5 @@
 use docx_rs::*;
 use std::fs::File;
-use std::io::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let template_dir = std::path::Path::new("../assets/templates");

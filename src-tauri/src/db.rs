@@ -2,12 +2,12 @@ use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::fs;
 use tauri::AppHandle;
-use tauri::Manager;
 
 use crate::error::AppResult;
 
 pub async fn init_db(app: &AppHandle) -> AppResult<SqlitePool> {
-    let app_dir = app.path().app_data_dir()?;
+    let app_dir = crate::utils::get_app_data_dir(app);
+
     if !app_dir.exists() {
         fs::create_dir_all(&app_dir)?;
     }

@@ -6,6 +6,7 @@ pub mod excel;
 pub mod models;
 pub mod security;
 pub mod templates;
+pub mod utils; // Added utils module
 pub mod workflow;
 
 use tauri::Manager;
@@ -28,10 +29,7 @@ pub fn run() {
             });
 
             // Initialize optimized document converter
-            let converter = document::converter::DocumentConverter::new(
-                std::path::PathBuf::from("/usr/bin/libreoffice"),
-                4,
-            );
+            let converter = document::converter::DocumentConverter::new(4);
             app.manage(converter);
 
             Ok(())

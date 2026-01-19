@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use rust_xlsxwriter::*;
 use sqlx::SqlitePool;
 use std::path::PathBuf;
@@ -7,9 +7,8 @@ use tauri::AppHandle;
 pub struct ExcelLedger;
 
 impl ExcelLedger {
-    pub fn get_path(_app: &AppHandle) -> Result<PathBuf> {
-        let home = dirs::document_dir().context("Could not find document directory")?;
-        let watiqa_dir = home.join("WatiqaLink");
+    pub fn get_path(app: &AppHandle) -> Result<PathBuf> {
+        let watiqa_dir = crate::utils::get_documents_dir(app);
         if !watiqa_dir.exists() {
             std::fs::create_dir_all(&watiqa_dir)?;
         }

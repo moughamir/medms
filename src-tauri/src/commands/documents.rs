@@ -1,19 +1,18 @@
 use crate::document::converter::DocumentConverter;
 use crate::error::AppResult;
 use crate::templates::police::{PoliceDocumentData, TemplateEngine};
-use std::path::PathBuf;
+use tauri::Manager;
 use tauri::State;
 
 #[tauri::command]
 pub async fn generate_police_document(
     data: PoliceDocumentData,
+    app: tauri::AppHandle,
     converter: State<'_, DocumentConverter>,
 ) -> AppResult<String> {
-    // 1. Define paths
-    // 1. Define paths in Documents/WatiqaLink/Generated
-    let home = dirs::document_dir()
-        .ok_or_else(|| crate::error::AppError::Io("Could not find documents dir".into()))?;
-    let output_dir = home.join("WatiqaLink").join("Generated");
+    // 1. Define paths in WatiqaLink/Generated
+    let watiqa_dir = crate::utils::get_documents_dir(&app);
+    let output_dir = watiqa_dir.join("Generated");
     if !output_dir.exists() {
         std::fs::create_dir_all(&output_dir)?;
     }
@@ -22,8 +21,11 @@ pub async fn generate_police_document(
     let docx_path = output_dir.join(format!("{}.docx", filename));
     let pdf_path = output_dir.join(format!("{}.pdf", filename));
 
-    // TODO: Load the actual template from the resource path
-    let template_path = PathBuf::from("resources/templates")
+    // 2. Load the template from the app resources
+    let template_path = app
+        .path()
+        .resource_dir()?
+        .join("assets/templates")
         .join(&data.template_id)
         .with_extension("docx");
 
