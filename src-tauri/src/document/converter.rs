@@ -192,19 +192,25 @@ mod tests {
 
     #[tokio::test]
     async fn test_retry_mechanism_failure() {
+        // Force failure by using an invalid path
+        std::env::set_var("LIBREOFFICE_PATH", "/usr/bin/false");
         let converter = DocumentConverter::new(1);
+
         let temp_dir = tempfile::tempdir().unwrap();
         let input_path = temp_dir.path().join("input.docx");
         fs::write(&input_path, "dummy").unwrap();
 
         let output_path = temp_dir.path().join("output.pdf");
 
-        // This should fail after 2 retries (3 total attempts)
+        // This should fail after 1 retry (2 total attempts)
         let start = std::time::Instant::now();
         let result = converter
             .convert_with_retry(&input_path, &output_path, 1)
             .await;
         let duration = start.elapsed();
+
+        // Clean up env var for other tests
+        std::env::remove_var("LIBREOFFICE_PATH");
 
         assert!(result.is_err());
         // Retry delay is 2^attempts. 1 retry = 2 seconds.

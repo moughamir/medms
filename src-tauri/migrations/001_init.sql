@@ -1,10 +1,8 @@
--- Users with TOTP
 CREATE TABLE users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin', 'agent', 'viewer')),
+    password_hash TEXT,
+    role TEXT NOT NULL CHECK(role IN ('admin', 'inspector', 'viewer')),
     totp_secret TEXT,
     totp_enabled INTEGER DEFAULT 0,
     backup_codes TEXT,
@@ -62,11 +60,10 @@ CREATE TABLE login_attempts (
 );
 CREATE INDEX idx_login_attempts ON login_attempts(username, timestamp);
 -- Default admin user (password: admin123)
-INSERT INTO users (id, username, password_hash, full_name, role)
+INSERT INTO users (id, username, password_hash, role)
 VALUES (
         'admin',
         'admin',
         '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYWJ3.VQo6a',
-        'Administrateur',
         'admin'
     );

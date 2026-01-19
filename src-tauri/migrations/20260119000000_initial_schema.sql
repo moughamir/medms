@@ -1,19 +1,4 @@
--- Create Users table
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY NOT NULL,
-  -- UUID
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT,
-  -- Nullable if using only TOTP
-  totp_secret TEXT,
-  totp_enabled BOOLEAN DEFAULT 0,
-  backup_codes TEXT,
-  -- JSON array
-  role TEXT DEFAULT 'inspector',
-  -- admin, inspector
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  last_login TEXT
-);
+-- Users table handled by 001_init.sql
 -- Create Commerces table (Businesses)
 CREATE TABLE IF NOT EXISTS commerces (
   id TEXT PRIMARY KEY NOT NULL,
