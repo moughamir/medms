@@ -15,7 +15,7 @@ async fn test_database_migrations() {
         .await
         .expect("Failed to run migrations");
 
-    // Verify system_settings table exists
+    // Verify users table exists
     let table_exists =
         sqlx::query!("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
             .fetch_one(&pool)
@@ -36,12 +36,13 @@ async fn test_user_creation_and_totp_flow() {
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
     // Insert a test user
+    let user_id = uuid::Uuid::new_v4().to_string();
     sqlx::query!(
-        "INSERT INTO users (username, role, password_hash, full_name) VALUES (?, ?, ?, ?)",
+        "INSERT INTO users (id, username, role, password_hash) VALUES (?, ?, ?, ?)",
+        user_id,
         "testuser",
         "admin",
-        "mock_hash",
-        "Test User"
+        "mock_hash"
     )
     .execute(&pool)
     .await
