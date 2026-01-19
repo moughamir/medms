@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInspectionStore, CreateViolation } from '../stores/inspectionStore';
 import { useCommerceStore } from '../stores/commerceStore';
 import { useAuthStore } from '../stores/authStore';
-import { ChevronRight, ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save, Plus, Trash2, Store } from 'lucide-react';
 
 const ViolationForm = ({ onAdd, onCancel }: { onAdd: (v: CreateViolation) => void, onCancel: () => void }) => {
   const [code, setCode] = useState('');
@@ -28,31 +28,31 @@ const ViolationForm = ({ onAdd, onCancel }: { onAdd: (v: CreateViolation) => voi
       <h4 className="font-bold text-slate-700 font-arabic">إضافة مخالفة</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input
-          className="p-2 border rounded"
-          placeholder="رمز المخالفة (Code)"
+          className="p-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-arabic"
+          placeholder="رمز المخالفة"
           value={code}
           onChange={e => setCode(e.target.value)}
         />
         <select
-          className="p-2 border rounded"
+          className="p-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-arabic"
           value={severity}
           onChange={e => setSeverity(e.target.value)}
         >
-          <option value="low">منخفضة (Low)</option>
-          <option value="medium">متوسطة (Medium)</option>
-          <option value="high">شديدة (High)</option>
-          <option value="critical">خطيرة (Critical)</option>
+          <option value="low">منخفضة</option>
+          <option value="medium">متوسطة</option>
+          <option value="high">شديدة</option>
+          <option value="critical">خطيرة جدا</option>
         </select>
         <textarea
-          className="p-2 border rounded col-span-2"
-          placeholder="وصف المخالفة"
+          className="p-3 border rounded-lg col-span-2 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-arabic h-24"
+          placeholder="وصف المخالفة بالتفصيل..."
           value={desc}
           onChange={e => setDesc(e.target.value)}
         />
       </div>
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-1 text-slate-500">إلغاء</button>
-        <button onClick={handleSubmit} className="px-3 py-1 bg-blue-600 text-white rounded">إضافة</button>
+        <button onClick={onCancel} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition font-arabic">إلغاء</button>
+        <button onClick={handleSubmit} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-arabic shadow-lg shadow-emerald-100">إضافة</button>
       </div>
     </div>
   );
@@ -115,11 +115,11 @@ export const NewInspectionPage = () => {
 
       {/* Stepper */}
       <div className="flex items-center justify-between mb-8 px-10">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>1</div>
-        <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-slate-200'}`} />
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>2</div>
-        <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-slate-200'}`} />
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>3</div>
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${step >= 1 ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100' : 'bg-slate-200 text-slate-500'}`}>1</div>
+        <div className={`flex-1 h-1 mx-2 rounded-full transition-all ${step >= 2 ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${step >= 2 ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100' : 'bg-slate-200 text-slate-500'}`}>2</div>
+        <div className={`flex-1 h-1 mx-2 rounded-full transition-all ${step >= 3 ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${step >= 3 ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100' : 'bg-slate-200 text-slate-500'}`}>3</div>
       </div>
 
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm min-h-[400px]">
@@ -130,7 +130,7 @@ export const NewInspectionPage = () => {
               {selectedCommerce && (
                 <button
                   onClick={() => setSelectedCommerce('')}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-arabic"
+                  className="text-sm text-emerald-600 hover:text-emerald-800 font-arabic font-bold"
                 >
                   تغيير الاختيار
                 </button>
@@ -142,8 +142,8 @@ export const NewInspectionPage = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="ابحث عن المحل بالاسم، المسير أو الرقم السري..."
-                    className="w-full p-3 pr-10 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-arabic"
+                    placeholder="ابحث عن المحل باسم المحل، اسم المسير أو رقم المحل..."
+                    className="w-full py-4 pr-12 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-arabic text-right shadow-sm"
                     onChange={(e) => fetchCommerces(e.target.value)}
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
@@ -159,12 +159,10 @@ export const NewInspectionPage = () => {
                       <button
                         key={c.id}
                         onClick={() => setSelectedCommerce(c.id)}
-                        className="text-right p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all group flex items-start gap-4"
+                        className="text-right p-5 rounded-2xl border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group flex items-start gap-4 shadow-sm hover:shadow-md"
                       >
-                        <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                          </svg>
+                        <div className="bg-slate-100 p-3 rounded-xl group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
+                          <Store size={24} />
                         </div>
                         <div className="flex-1">
                           <h3 className="font-bold text-slate-800 mb-1">{c.name}</h3>
@@ -190,16 +188,16 @@ export const NewInspectionPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center animate-in fade-in zoom-in duration-300">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-8 text-center animate-in fade-in zoom-in duration-300">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full mb-4 shadow-inner">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-blue-900 mb-1">
+                <h3 className="text-2xl font-bold text-emerald-900 mb-2 font-arabic">
                   {commerces.find(c => c.id === selectedCommerce)?.name}
                 </h3>
-                <p className="text-blue-700 font-arabic">تم اختيار المحل بنجاح</p>
+                <p className="text-emerald-700 font-arabic font-medium">تم اختيار المحل بنجاح</p>
               </div>
             )}
           </div>
@@ -209,21 +207,21 @@ export const NewInspectionPage = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold font-arabic">بيانات المحضر</h2>
             <div>
-              <label className="block text-sm font-medium mb-1">رقم المحضر (Report Number)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 font-arabic">رقم المحضر</label>
               <input
-                className="w-full p-3 border rounded-lg"
+                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-mono text-center text-lg font-bold bg-slate-50"
                 value={reportNumber}
                 onChange={e => setReportNumber(e.target.value)}
-                placeholder="2024/001"
+                placeholder="20240119/001"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">ملخص (Summary)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 font-arabic">ملخص الملاحظات</label>
               <textarea
-                className="w-full p-3 border rounded-lg h-32"
+                className="w-full p-4 border border-slate-200 rounded-xl h-40 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-arabic"
                 value={summary}
                 onChange={e => setSummary(e.target.value)}
-                placeholder="وصف ظروف المعاينة..."
+                placeholder="صف ظروف المعاينة والملاحظات المسجلة..."
               />
             </div>
           </div>
@@ -235,7 +233,7 @@ export const NewInspectionPage = () => {
               <h2 className="text-xl font-bold font-arabic">المخالفات ({violations.length})</h2>
               <button
                 onClick={() => setShowViolationForm(true)}
-                className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded transition"
+                className="flex items-center gap-2 text-emerald-600 hover:bg-emerald-50 px-4 py-2 rounded-xl transition font-arabic font-bold border border-emerald-100 shadow-sm"
               >
                 <Plus size={18} />
                 <span>إضافة مخالفة</span>
@@ -282,7 +280,7 @@ export const NewInspectionPage = () => {
         {step < 3 ? (
           <button
             onClick={handleNext}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200"
+            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95 font-arabic font-bold"
           >
             <span>التالي</span>
             <ChevronLeft size={20} />

@@ -7,12 +7,16 @@ use zip::{ZipArchive, ZipWriter};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoliceDocumentData {
     pub template_id: String,
+    pub country: String,
+    pub ministry: String,
+    pub province: String,
+    pub commune: String,
+    pub department: String,
     pub citizen_name: String,
     pub citizen_cin: String,
     pub citizen_address: String,
     pub agent_name: String,
     pub agent_grade: String,
-    pub commune: String,
     pub uuid: uuid::Uuid,
     pub timestamp: String,
 }
@@ -57,12 +61,16 @@ impl TemplateEngine {
         let mut result = xml.to_string();
 
         let placeholders = [
+            ("COUNTRY", &data.country),
+            ("MINISTRY", &data.ministry),
+            ("PROVINCE", &data.province),
+            ("COMMUNE", &data.commune),
+            ("DEPARTMENT", &data.department),
             ("CITIZEN_NAME", &data.citizen_name),
             ("CITIZEN_CIN", &data.citizen_cin),
             ("CITIZEN_ADDRESS", &data.citizen_address),
             ("AGENT_NAME", &data.agent_name),
             ("AGENT_GRADE", &data.agent_grade),
-            ("COMMUNE", &data.commune),
             ("UUID", &data.uuid.to_string()),
             ("TIMESTAMP", &data.timestamp),
         ];
@@ -87,12 +95,16 @@ mod tests {
     fn test_robust_replacement() {
         let data = PoliceDocumentData {
             template_id: "test".to_string(),
+            country: "المملكة المغربية".to_string(),
+            ministry: "وزارة الداخلية".to_string(),
+            province: "إقليم النواصر".to_string(),
+            commune: "جماعة بوسكورة".to_string(),
+            department: "قسم الشرطة الإدارية".to_string(),
             citizen_name: "Yassine".to_string(),
             citizen_cin: "AB123456".to_string(),
             citizen_address: "Bouskoura".to_string(),
             agent_name: "Agent X".to_string(),
             agent_grade: "Grade A".to_string(),
-            commune: "Bouskoura".to_string(),
             uuid: Uuid::nil(),
             timestamp: "2026-01-16".to_string(),
         };

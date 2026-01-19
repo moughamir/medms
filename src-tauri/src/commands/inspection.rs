@@ -103,10 +103,7 @@ pub async fn add_violation(
     add_violation_inner(data, &db).await
 }
 
-pub async fn add_violation_inner(
-    data: CreateViolation,
-    pool: &SqlitePool,
-) -> AppResult<Violation> {
+pub async fn add_violation_inner(data: CreateViolation, pool: &SqlitePool) -> AppResult<Violation> {
     let id = Uuid::new_v4().to_string();
 
     let violation = sqlx::query_as!(
@@ -158,7 +155,6 @@ pub async fn list_violations_inner(
 mod tests {
     use super::*;
     use sqlx::sqlite::SqlitePoolOptions;
-    use std::path::Path;
 
     async fn setup_db() -> SqlitePool {
         let pool = SqlitePoolOptions::new()
@@ -172,7 +168,7 @@ mod tests {
         // Using ../migrations relative to this file's compile location? No, it's relative to Cargo.toml.
         // src-tauri/Cargo.toml is the manifest. migrations is src-tauri/migrations.
         // So "./migrations" should work if it picks up src-tauri/migrations.
-        
+
         sqlx::migrate!("./migrations")
             .run(&pool)
             .await
@@ -187,12 +183,26 @@ mod tests {
 
         // 1. Dependencies
         let user_id = Uuid::new_v4().to_string();
-        sqlx::query!("INSERT INTO users (id, username, role) VALUES (?, ?, ?)", user_id, "inspector1", "inspector")
-            .execute(&db).await.unwrap();
+        sqlx::query!(
+            "INSERT INTO users (id, username, role) VALUES (?, ?, ?)",
+            user_id,
+            "inspector1",
+            "inspector"
+        )
+        .execute(&db)
+        .await
+        .unwrap();
 
         let commerce_id = Uuid::new_v4().to_string();
-        sqlx::query!("INSERT INTO commerces (id, name, status) VALUES (?, ?, ?)", commerce_id, "Test Shop", "active")
-            .execute(&db).await.unwrap();
+        sqlx::query!(
+            "INSERT INTO commerces (id, name, status) VALUES (?, ?, ?)",
+            commerce_id,
+            "Test Shop",
+            "active"
+        )
+        .execute(&db)
+        .await
+        .unwrap();
 
         // 2. Create Inspection
         let insp_data = CreateInspection {
@@ -202,7 +212,9 @@ mod tests {
             summary: Some("Test".to_string()),
         };
 
-        let inspection = create_inspection_inner(insp_data, &db).await.expect("Failed to create inspection");
+        let inspection = create_inspection_inner(insp_data, &db)
+            .await
+            .expect("Failed to create inspection");
         assert_eq!(inspection.report_number, "2024/001");
         assert_eq!(inspection.status, "draft");
 
@@ -215,14 +227,16 @@ mod tests {
             measure_taken: Some("warning".to_string()),
         };
 
-        let violation = add_violation_inner(viol_data, &db).await.expect("Failed to add violation");
+        let violation = add_violation_inner(viol_data, &db)
+            .await
+            .expect("Failed to add violation");
         assert_eq!(violation.violation_code, "V001");
 
         // 4. List
         let recents = list_recent_inspections_inner(&db).await.unwrap();
         assert!(!recents.is_empty());
         assert_eq!(recents[0].id, inspection.id);
-        
+
         let violations = list_violations_inner(inspection.id, &db).await.unwrap();
         assert_eq!(violations.len(), 1);
     }
